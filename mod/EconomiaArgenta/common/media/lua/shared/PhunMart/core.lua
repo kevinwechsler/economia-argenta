@@ -1085,7 +1085,10 @@ end
 --- A machine bakes its offers at restock: prices, stock and a full copy of the
 --- reward. So until it rolls again it keeps selling what the old definitions
 --- said, which is stale rather than broken.
-Core.defsRevision = 1
+-- Economia Argenta: subir este numero cada vez que cambian precios o
+-- catalogo, para que las maquinas ya colocadas se actualicen solas.
+-- 2 = precios por item con nombre completo (antes todo quedaba en 1 billete).
+Core.defsRevision = 2
 
 --- Which shop types that revision affects, or nil for all of them.
 ---
@@ -1093,7 +1096,8 @@ Core.defsRevision = 1
 --- reroll takes stock out from under players standing at shops the change never
 --- touched. Revision 1 is the vehicle rework: groups carry their own price band
 --- and fuel now, and only WrentAWreck sells cars.
-Core.defsRevisionShops = {}
+-- nil = todas las tiendas (son pocas y todas comparten el catalogo).
+Core.defsRevisionShops = nil
 
 --- What to call a shop type on screen.
 ---

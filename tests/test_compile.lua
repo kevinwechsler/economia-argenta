@@ -19,8 +19,17 @@ _G.getScriptManager = function()
         getVehicle = function()
             return nil
         end,
-        FindItem = function()
-            return nil
+        -- Como el juego real: todo item existe y su nombre completo es
+        -- "Base.<nombre>". El motor normaliza los items de los grupos con
+        -- esto, asi que un precio guardado con el nombre corto falla aca igual
+        -- que en el juego.
+        FindItem = function(_, name)
+            local full = tostring(name):find("%.") and name or ("Base." .. tostring(name))
+            return {
+                getFullName = function()
+                    return full
+                end
+            }
         end,
         getAllItems = function()
             return {
@@ -134,7 +143,7 @@ if pool then
     local n, sample = 0, nil
     for id, offer in pairs(pool.offers or {}) do
         n = n + 1
-        if offer.item == "Shotgun" then
+        if offer.item == "Base.Shotgun" then
             sample = offer
         end
     end
@@ -153,7 +162,7 @@ ok("pool_eco_compro_oro existe", oro ~= nil)
 if oro then
     local sample
     for id, offer in pairs(oro.offers or {}) do
-        if offer.item == "Diamond" then
+        if offer.item == "Base.Diamond" then
             sample = offer
         end
     end
@@ -168,7 +177,7 @@ end
 print("-- catalogo --")
 local function precioDe(pool, item)
     for _, offer in pairs((runtime.pools[pool] or {}).offers or {}) do
-        if offer.item == item then
+        if offer.item == "Base." .. item then
             local p = offer.price
             return p and p.kind, p and (p.items and p.items[1] and p.items[1].amount or p.amount), offer
         end

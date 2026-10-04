@@ -5,10 +5,15 @@ local Catalogo = require "PhunMart/defaults/catalogo"
 
 local items = {}
 
+-- La clave tiene que ser el nombre COMPLETO ("Base.Katana"): en el juego el
+-- motor normaliza los items de los grupos a su nombre completo antes de
+-- buscar su precio aca. Con el nombre corto el precio se ignora y queda el del
+-- grupo (1 billete).
 for _, lista in ipairs({Catalogo.armeria, Catalogo.ferreteria}) do
     for _, g in ipairs(lista) do
         for item, billetes in pairs(g.items) do
-            items[item] = {
+            local full = item:find("%.") and item or ("Base." .. item)
+            items[full] = {
                 price = "eco_" .. billetes
             }
         end
