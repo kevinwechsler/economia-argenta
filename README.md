@@ -11,7 +11,7 @@ GPL-3.0 (ver [LICENSE](LICENSE)).
 
 | Regla | Cómo se resuelve |
 |---|---|
-| La plata se encuentra en el mundo | Billete vanilla `Base.Money`, con ícono propio. Aparece mucho menos que en el juego normal (sandbox `CantidadBilletes`, 15% por defecto) y sin fajos. |
+| La plata se encuentra en el mundo | Billete vanilla `Base.Money`. Aparece mucho menos que en el juego normal (sandbox `CantidadBilletes`, 15% por defecto) y sin fajos. |
 | Un billete vale mucho | 5 billetes = una caja de balas, ~15 = una pistola, 100+ = un rifle de asalto. Nadie carga cientos. |
 | Joyas y monedas se canjean | **Compro Oro**: plata 5 por 1 billete, oro 2 por 1, piedras, lingotes y diamantes pagan más. |
 | Solo se compran ciertas cosas | **Armería** (armas, munición, cargadores, accesorios) y **Ferretería** (consumibles chicos para construir). Sin comida, herramientas, bolsos ni ropa. |
@@ -19,7 +19,7 @@ GPL-3.0 (ver [LICENSE](LICENSE)).
 | Si morís, la plata queda en el cuerpo | Los billetes son un item físico. |
 | NO se pueden vender items | Solo el Compro Oro acepta joyas. |
 | Tiendas fijas | Las coloca el admin a mano. |
-| Retos individuales | Kills, días sin morir, inicio limpio, habilidades, y "primero del server" con aviso a todos. |
+| Retos individuales | Kills, días sin morir, inicio limpio y habilidades: se cobran con el botón "Reclamar" de la pestaña Retos (tecla 0). "Primero del server": se paga solo al primero, con aviso a todos. |
 
 ## Dónde se toca cada cosa
 
@@ -29,10 +29,11 @@ GPL-3.0 (ver [LICENSE](LICENSE)).
 | Objetivos y premios de TODOS los retos | `media/lua/shared/EconomiaArgenta/retos_def.lua` (único lugar) |
 | Cobro de retos (server) | `media/lua/server/EconomiaArgenta/retos.lua` y, para kills, `defaults/token_rewards.lua` |
 | Pestaña "Retos" (tecla 0) | `media/lua/client/EconomiaArgenta/retos_tab.lua` |
+| Cambiar precios desde el juego (admin) | Click derecho sobre un producto en la tienda → "Cambiar precio…" / "Cambiar pago…" / "Volver al precio original". Código: `media/lua/server/EconomiaArgenta/precios_admin.lua`. Se guarda en `Zomboid/Lua/PhunMart_Items.json` del server |
 | Cuántos billetes hay en el mundo | `media/lua/server/EconomiaArgenta/billetes.lua` + sandbox |
 | Opciones de la partida | `media/sandbox-options.txt` (página "Economía Argenta") |
 | Textos | `media/lua/shared/Translate/{AR,ES,EN}/` (el juego en "Español (Argentina)" usa AR) |
-| Ícono del billete | `media/textures/Item_EA_Billete.png` (el billete usa ese ícono por `media/scripts/EconomiaArgenta_Billete.txt`), generado con `arte/hacer_icono.ps1` desde `arte/billete_original.jpg` |
+| Ícono del billete | El del juego. Hubo una prueba con un billete de pesos (`arte/`), descartada porque a 32px no se entendía |
 
 Todo bajo `mod/EconomiaArgenta/common/`. El motor vive en
 `media/lua/{client,server,shared}/PhunMart*` (nombre interno, no se cambia
@@ -73,6 +74,10 @@ Necesita LuaJIT (`winget install --id DEVCOM.LuaJIT --source winget`).
 & "$env:LOCALAPPDATA\Programs\LuaJIT\bin\luajit.exe" tests\test_retos_tab.lua
 ```
 
+```bash
+& "$env:LOCALAPPDATA\Programs\LuaJIT\bin\luajit.exe" tests\test_retos_server.lua
+```
+
 ## Probar los retos rápido
 
 En las opciones de la partida, página "Economía Argenta", prender **Modo
@@ -80,7 +85,7 @@ prueba de retos**:
 - divide por 50 los objetivos de kills y días (50 kills = 1, 3 días = 1,4
   horas de juego),
 - baja las habilidades pedidas a nivel 1,
-- revisa los retos cada minuto.
+- los retos se revisan cada minuto (siempre, no solo en modo prueba).
 
 La pestaña Retos (tecla 0) muestra un aviso rojo mientras está prendido.
 Apagarlo antes de jugar en serio.

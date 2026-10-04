@@ -25,10 +25,12 @@ local function pago(billetes)
     }
 end
 
-return {
-    eco_pago_1 = pago(1),
-    eco_pago_2 = pago(2),
-    eco_pago_6 = pago(6),
-    eco_pago_10 = pago(10),
-    eco_pago_20 = pago(20)
-}
+-- eco_pago_1 .. eco_pago_999: el Compro Oro paga N billetes. El catalogo usa
+-- algunos; el resto esta para que el admin pueda cambiar pagos desde la
+-- tienda (server/EconomiaArgenta/precios_admin.lua).
+local specials = {}
+for n = 1, 999 do
+    specials["eco_pago_" .. n] = pago(n)
+end
+
+return specials

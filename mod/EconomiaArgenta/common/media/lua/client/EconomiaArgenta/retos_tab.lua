@@ -1,12 +1,15 @@
 -- Pestana "Retos" en la ventana del personaje de Economia Argenta.
 --
--- Muestra cada reto con su estado: cobrado, en progreso (con barra y cuanto
--- falta), perdido, o, para los "primero del server", quien lo gano.
+-- Cada reto aparece con su estado:
+--   en progreso  -> barra y cuanto falta
+--   logrado      -> boton "Reclamar" (cobra al instante)
+--   cobrado / perdido / ganado por otro (primero del server)
 -- Se abre desde la ventana del personaje o con la tecla 0 (configurable en
--- Opciones > Mods > Economia Argenta).
+-- Opciones > Mods > Economia Argenta). Se desplaza con la rueda del mouse o
+-- arrastrando la barra de la derecha.
 --
--- Kills, retos cobrados y ganadores los guarda el servidor y se piden al abrir
--- la pestana (y cada pocos segundos mientras esta abierta). Dias vivo y
+-- Kills, logrados, cobrados y ganadores los guarda el servidor y se piden al
+-- abrir la pestana (y cada pocos segundos mientras esta abierta). Dias vivo y
 -- habilidades se leen del propio personaje.
 if isServer() then
     return
@@ -26,8 +29,9 @@ local FONT_SMALL = UIFont.Small
 local FONT_MEDIUM = UIFont.Medium
 local HGT_SMALL = getTextManager():getFontHeight(FONT_SMALL)
 local HGT_MEDIUM = getTextManager():getFontHeight(FONT_MEDIUM)
-local ROW = HGT_SMALL + 6
+local ROW = HGT_SMALL + 8
 local PAD = 10
+local SCROLL_W = 10
 
 -- Colores
 local C_TITULO = {0.95, 0.80, 0.35}
@@ -56,12 +60,8 @@ local function dias(v)
     return (s:gsub("%.", ","))
 end
 
-local function premio(n)
-    return "+" .. tostring(n)
-end
-
 -- =========================================================
--- Datos
+-- Datos y comandos
 -- =========================================================
 
 local Estado = {
@@ -69,9 +69,13 @@ local Estado = {
     ultimoPedido = 0
 }
 
+local function local_()
+    return Core.isLocal and EconomiaArgentaRetos and EconomiaArgentaRetos.datosPara
+end
+
 local function pedirDatos(player)
     Estado.ultimoPedido = getTimestampMs()
-    if Core.isLocal and EconomiaArgentaRetos and EconomiaArgentaRetos.datosPara then
+    if local_() then
         -- Solitario: el servidor vive en este mismo Lua.
         Estado.datos = EconomiaArgentaRetos.datosPara(player)
         return
@@ -79,12 +83,38 @@ local function pedirDatos(player)
     sendClientCommand(player, Core.name, "ecoRetosPedir", {})
 end
 
+local function reclamar(player, clave)
+    if local_() then
+        EconomiaArgentaRetos.reclamar(player, clave)
+        Estado.datos = EconomiaArgentaRetos.datosPara(player)
+        return
+    end
+    sendClientCommand(player, Core.name, "ecoRetosReclamar", {
+        clave = clave
+    })
+end
+
 ClientCommands["ecoRetosDatos"] = function(args)
     Estado.datos = args
 end
 
+-- =========================================================
+-- Filas
+-- =========================================================
+
+--- Estado de un reto individual segun los datos del servidor.
+local function estadoIndividual(d, clave)
+    if (d.cobrados or {})[clave] then
+        return "cobrado"
+    end
+    if (d.logrados or {})[clave] then
+        return "listo"
+    end
+    return "progreso"
+end
+
 --- Arma las filas de la pestana. Cada fila: {tipo, texto, premio, estado,
---- progreso (0..1), detalle}.
+--- progreso (0..1), detalle, clave}.
 local function armarFilas(player, d)
     local filas = {}
     local function seccion(texto, extra)
@@ -100,8 +130,6 @@ local function armarFilas(player, d)
     end
 
     local r = Def.actuales()
-    local cobrados = d.cobrados or {}
-    local cobradosKills = d.cobradosKills or {}
     local primeros = d.primeros or {}
     local kills = tonumber(d.kills) or 0
     local diasVivo = Def.diasVivo(player)
@@ -116,55 +144,63 @@ local function armarFilas(player, d)
     -- Kills
     seccion(t("Kills"), t("TusKills", numero(kills)))
     for _, k in ipairs(r.kills) do
-        local hecho = cobradosKills["zombie_" .. k.kills] ~= nil
+        local clave = "kills_" .. k.kills
+        local estado = estadoIndividual(d, clave)
         fila({
+            clave = clave,
             texto = getText("IGUI_EconomiaArgenta_Reto_Kills", numero(k.kills)),
             premio = k.pago,
-            estado = hecho and "cobrado" or "progreso",
+            estado = estado,
             progreso = math.min(1, kills / k.kills),
-            detalle = not hecho and t("Faltan", numero(math.max(0, k.kills - kills))) or nil
+            detalle = estado == "progreso" and t("Faltan", numero(math.max(0, k.kills - kills))) or nil
         })
     end
     local cada = r.killsCada
-    local proximo = (math.floor(kills / cada.kills) + 1) * cada.kills
+    local vueltas = math.floor(kills / cada.kills)
+    local pendientes = math.max(0, vueltas - (tonumber(d.cadaCobrados) or 0))
     fila({
+        clave = "kills_cada",
         texto = t("CadaKills", numero(cada.kills)),
-        premio = cada.pago,
-        estado = "progreso",
+        premio = cada.pago * math.max(1, pendientes),
+        estado = pendientes > 0 and "listo" or "progreso",
         progreso = (kills % cada.kills) / cada.kills,
-        detalle = t("Proximo", numero(proximo))
+        detalle = pendientes > 1 and t("Veces", tostring(pendientes)) or
+            t("Proximo", numero((vueltas + 1) * cada.kills))
     })
 
     -- Supervivencia
     seccion(t("Supervivencia"), t("DiasVivo", dias(diasVivo)))
     for _, x in ipairs(r.dias) do
-        local hecho = cobrados["dias_" .. x.dias] ~= nil
+        local clave = "dias_" .. x.dias
+        local estado = estadoIndividual(d, clave)
         fila({
+            clave = clave,
             texto = getText("IGUI_EconomiaArgenta_Reto_Dias", dias(x.dias)),
             premio = x.pago,
-            estado = hecho and "cobrado" or "progreso",
+            estado = estado,
             progreso = math.min(1, diasVivo / x.dias),
-            detalle = not hecho and t("Faltan", dias(math.max(0, x.dias - diasVivo))) or nil
+            detalle = estado == "progreso" and t("Faltan", dias(math.max(0, x.dias - diasVivo))) or nil
         })
     end
     local il = r.inicioLimpio
     local diasMundo = tonumber(d.diasMundo) or 0
     local ilFila = {
+        clave = "inicio_limpio",
         texto = getText("IGUI_EconomiaArgenta_Reto_InicioLimpio", dias(il.dias)),
-        premio = il.pago
+        premio = il.pago,
+        estado = estadoIndividual(d, "inicio_limpio")
     }
-    if cobrados["inicio_limpio"] then
-        ilFila.estado = "cobrado"
-    elseif (tonumber(d.muertes) or 0) > 0 then
-        ilFila.estado = "perdido"
-        ilFila.detalle = t("PerdidoMuerte")
-    elseif diasMundo >= il.dias then
-        ilFila.estado = "perdido"
-        ilFila.detalle = t("PerdidoTarde")
-    else
-        ilFila.estado = "progreso"
-        ilFila.progreso = diasMundo / il.dias
-        ilFila.detalle = t("DiaDelServer", dias(diasMundo))
+    if ilFila.estado == "progreso" then
+        if (tonumber(d.muertes) or 0) > 0 then
+            ilFila.estado = "perdido"
+            ilFila.detalle = t("PerdidoMuerte")
+        elseif diasMundo >= il.dias then
+            ilFila.estado = "perdido"
+            ilFila.detalle = t("PerdidoTarde")
+        else
+            ilFila.progreso = diasMundo / il.dias
+            ilFila.detalle = t("DiaDelServer", dias(diasMundo))
+        end
     end
     fila(ilFila)
 
@@ -172,7 +208,7 @@ local function armarFilas(player, d)
     local _, maxNivel, maxNombre = Def.habilidadesDe(player, 1)
     seccion(t("Habilidades"), maxNombre and t("MejorHabilidad", maxNombre, tostring(maxNivel)) or nil)
     for _, h in ipairs(r.habilidades) do
-        local hecho = cobrados[h.clave] ~= nil
+        local estado = estadoIndividual(d, h.clave)
         local cantidad = Def.habilidadesDe(player, h.nivel)
         local texto = h.cantidad > 1 and
                           getText("IGUI_EconomiaArgenta_Reto_HabilidadesVarias", tostring(h.nivel), tostring(h.cantidad)) or
@@ -186,15 +222,16 @@ local function armarFilas(player, d)
             detalle = t("NivelActual", tostring(maxNivel))
         end
         fila({
+            clave = h.clave,
             texto = texto,
             premio = h.pago,
-            estado = hecho and "cobrado" or "progreso",
+            estado = estado,
             progreso = progreso,
-            detalle = not hecho and detalle or nil
+            detalle = estado == "progreso" and detalle or nil
         })
     end
 
-    -- Primero del server
+    -- Primero del server (se pagan solos)
     seccion(t("Primeros"), t("PrimerosAyuda"))
     local yo = player:getUsername()
     for _, p in ipairs(r.primeros) do
@@ -214,6 +251,20 @@ local function armarFilas(player, d)
             f.detalle = t("Disponible")
         end
         fila(f)
+    end
+
+    -- Cuantos se pueden reclamar: va arriba de todo
+    local listos = 0
+    for _, f in ipairs(filas) do
+        if f.estado == "listo" then
+            listos = listos + 1
+        end
+    end
+    if listos > 0 then
+        table.insert(filas, 1, {
+            tipo = "listos",
+            texto = t("ParaReclamar", tostring(listos))
+        })
     end
 
     return filas
@@ -246,6 +297,7 @@ function Tab:new(x, y, width, height, playerNum)
     }
     o.scrollY = 0
     o.altoContenido = 0
+    o.botones = {}
     return o
 end
 
@@ -253,7 +305,25 @@ function Tab:player()
     return getSpecificPlayer(self.playerNum)
 end
 
+function Tab:maxScroll()
+    return math.max(0, self.altoContenido - self.height)
+end
+
+function Tab:setScroll(y)
+    self.scrollY = math.max(0, math.min(self:maxScroll(), y))
+end
+
 function Tab:prerender()
+    -- La pestana se estira con la ventana del personaje.
+    if self.parent and self.parent.height then
+        local alto = self.parent.height - self.y
+        if alto > 50 and alto ~= self.height then
+            self:setHeight(alto)
+        end
+        if self.parent.width and self.parent.width ~= self.width then
+            self:setWidth(self.parent.width)
+        end
+    end
     ISPanel.prerender(self)
     local player = self:player()
     if player and getTimestampMs() - Estado.ultimoPedido > REFRESCO_MS then
@@ -262,9 +332,70 @@ function Tab:prerender()
 end
 
 function Tab:onMouseWheel(del)
-    local maximo = math.max(0, self.altoContenido - self.height)
-    self.scrollY = math.max(0, math.min(maximo, self.scrollY + del * ROW * 2))
+    self:setScroll(self.scrollY + del * ROW * 2)
     return true
+end
+
+--- Rectangulo de la barra de desplazamiento (nil si todo entra).
+function Tab:barra()
+    local max = self:maxScroll()
+    if max <= 0 then
+        return nil
+    end
+    local x = self.width - SCROLL_W - 2
+    local alto = math.max(30, math.floor(self.height * self.height / self.altoContenido))
+    local y = math.floor((self.height - alto) * self.scrollY / max)
+    return x, y, SCROLL_W, alto
+end
+
+function Tab:onMouseDown(x, y)
+    -- Barra de desplazamiento
+    local bx, by, bw, bh = self:barra()
+    if bx and x >= bx - 2 then
+        if y >= by and y <= by + bh then
+            self.arrastrando = y - by
+        else
+            -- click en el carril: saltar ahi
+            local max = self:maxScroll()
+            self:setScroll((y - bh / 2) / (self.height - bh) * max)
+        end
+        return true
+    end
+    -- Botones "Reclamar"
+    for _, b in ipairs(self.botones) do
+        if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
+            local player = self:player()
+            if player then
+                getSoundManager():playUISound("UIActivateButton")
+                reclamar(player, b.clave)
+            end
+            return true
+        end
+    end
+    return false
+end
+
+function Tab:onMouseMove(dx, dy)
+    if self.arrastrando then
+        local _, _, _, bh = self:barra()
+        if bh then
+            local max = self:maxScroll()
+            local y = self:getMouseY() - self.arrastrando
+            self:setScroll(y / math.max(1, self.height - bh) * max)
+        end
+    end
+end
+
+function Tab:onMouseMoveOutside(dx, dy)
+    self:onMouseMove(dx, dy)
+end
+
+function Tab:onMouseUp()
+    self.arrastrando = nil
+end
+
+function Tab:onMouseUpOutside()
+    self.arrastrando = nil
 end
 
 local function texto(self, s, x, y, c, font)
@@ -278,10 +409,11 @@ end
 
 function Tab:render()
     ISPanel.render(self)
+    self.botones = {}
     local player = self:player()
     self:setStencilRect(0, 0, self.width, self.height)
     local y = PAD - self.scrollY
-    local w = self.width
+    local w = self.width - SCROLL_W - 4
 
     texto(self, t("Titulo"), PAD, y, C_TITULO, FONT_MEDIUM)
     y = y + HGT_MEDIUM + 6
@@ -299,13 +431,19 @@ function Tab:render()
     end
 
     local colPremio = w - PAD
-    local colEstado = colPremio - 60
-    local anchoBarra = math.min(120, math.floor(w * 0.22))
+    local anchoBoton = getTextManager():MeasureStringX(FONT_SMALL, t("Reclamar")) + 16
+    local colEstado = colPremio - 50
+    local anchoBarra = math.min(110, math.floor(w * 0.2))
+    local mx, my = self:getMouseX(), self:getMouseY()
 
     for _, f in ipairs(armarFilas(player, d)) do
         if f.tipo == "aviso" then
             self:drawRect(PAD, y, w - 2 * PAD, ROW, 0.35, 0.6, 0.2, 0.1)
-            texto(self, f.texto, PAD + 6, y + 3, C_MAL)
+            texto(self, f.texto, PAD + 6, y + 4, C_MAL)
+            y = y + ROW + 6
+        elseif f.tipo == "listos" then
+            self:drawRect(PAD, y, w - 2 * PAD, ROW, 0.35, 0.15, 0.45, 0.15)
+            texto(self, f.texto, PAD + 6, y + 4, C_OK)
             y = y + ROW + 6
         elseif f.tipo == "seccion" then
             y = y + 6
@@ -319,40 +457,75 @@ function Tab:render()
         else
             local x = PAD
             local cTexto = C_TEXTO
+            local ty = y + 4
             if f.estado == "cobrado" then
-                texto(self, "v", x, y + 3, C_OK)
+                texto(self, "v", x, ty, C_OK)
                 cTexto = C_GRIS
             elseif f.estado == "perdido" or f.estado == "ganado" then
-                texto(self, "x", x, y + 3, C_MAL)
+                texto(self, "x", x, ty, C_MAL)
                 cTexto = C_GRIS
+            elseif f.estado == "listo" then
+                texto(self, "!", x, ty, C_OK)
             else
-                -- barra de progreso
                 local p = math.max(0, math.min(1, f.progreso or 0))
-                self:drawRect(x, y + 4, anchoBarra, ROW - 8, 0.8, 0.15, 0.15, 0.15)
+                self:drawRect(x, y + 5, anchoBarra, ROW - 10, 0.8, 0.15, 0.15, 0.15)
                 if p > 0 then
-                    self:drawRect(x, y + 4, math.floor(anchoBarra * p), ROW - 8, 0.9, C_BARRA[1], C_BARRA[2],
+                    self:drawRect(x, y + 5, math.floor(anchoBarra * p), ROW - 10, 0.9, C_BARRA[1], C_BARRA[2],
                         C_BARRA[3])
                 end
-                self:drawRectBorder(x, y + 4, anchoBarra, ROW - 8, 0.6, 0.5, 0.5, 0.5)
+                self:drawRectBorder(x, y + 5, anchoBarra, ROW - 10, 0.6, 0.5, 0.5, 0.5)
                 x = x + anchoBarra
             end
             x = x + 14
-            texto(self, f.texto, x, y + 3, cTexto)
+            texto(self, f.texto, x, ty, cTexto)
             if f.detalle then
                 local tw = getTextManager():MeasureStringX(FONT_SMALL, f.texto)
-                texto(self, "  " .. f.detalle, x + tw, y + 3, C_GRIS)
+                texto(self, "  " .. f.detalle, x + tw, ty, C_GRIS)
             end
-            local estadoTxt = (f.estado == "cobrado" and t("Cobrado")) or (f.estado == "perdido" and t("Perdido")) or
-                                  (f.estado == "ganado" and t("Ganado")) or nil
-            if estadoTxt then
-                textoDerecha(self, estadoTxt, colEstado, y + 3, f.estado == "cobrado" and C_OK or C_MAL)
+
+            textoDerecha(self, "+" .. tostring(f.premio), colPremio, ty,
+                (f.estado == "progreso" or f.estado == "listo") and C_PREMIO or C_GRIS)
+
+            if f.estado == "listo" and f.clave then
+                local bx = colEstado - anchoBoton
+                local bw, bh = anchoBoton, ROW - 2
+                local by = y + 1
+                local hover = mx >= bx and mx <= bx + bw and my >= by and my <= by + bh
+                self:drawRect(bx, by, bw, bh, 0.95, hover and 0.20 or 0.12, hover and 0.55 or 0.40, hover and 0.20 or 0.14)
+                self:drawRectBorder(bx, by, bw, bh, 1, 0.35, 0.85, 0.35)
+                local lw = getTextManager():MeasureStringX(FONT_SMALL, t("Reclamar"))
+                self:drawText(t("Reclamar"), bx + (bw - lw) / 2, ty, 1, 1, 1, 1, FONT_SMALL)
+                if by + bh > 0 and by < self.height then
+                    table.insert(self.botones, {
+                        x = bx,
+                        y = by,
+                        w = bw,
+                        h = bh,
+                        clave = f.clave
+                    })
+                end
+            else
+                local estadoTxt = (f.estado == "cobrado" and t("Cobrado")) or (f.estado == "perdido" and t("Perdido")) or
+                                      (f.estado == "ganado" and t("Ganado")) or nil
+                if estadoTxt then
+                    textoDerecha(self, estadoTxt, colEstado, ty, f.estado == "cobrado" and C_OK or C_MAL)
+                end
             end
-            textoDerecha(self, premio(f.premio), colPremio, y + 3, f.estado == "progreso" and C_PREMIO or C_GRIS)
             y = y + ROW
         end
     end
 
     self.altoContenido = y + self.scrollY + PAD
+    if self.scrollY > self:maxScroll() then
+        self:setScroll(self.scrollY)
+    end
+
+    -- Barra de desplazamiento
+    local bx, by, bw, bh = self:barra()
+    if bx then
+        self:drawRect(bx, 0, bw, self.height, 0.5, 0.1, 0.1, 0.1)
+        self:drawRect(bx, by, bw, bh, 0.9, 0.5, 0.5, 0.5)
+    end
     self:clearStencilRect()
 end
 

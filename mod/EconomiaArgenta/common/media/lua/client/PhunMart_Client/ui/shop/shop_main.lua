@@ -4,6 +4,7 @@ end
 
 require "ISUI/ISPanel"
 require "ISUI/ISButton"
+require "ISUI/ISTextBox"
 local Core = PhunMart
 local tools = require "PhunMart_Client/ui/ui_utils"
 
@@ -469,8 +470,31 @@ Core.registerShopMode({
     applies = function(data)
         return not (data and data.stocksNothing)
     end,
+    -- Economia Argenta: buscador arriba de la lista. Filtra en el cliente
+    -- mientras se escribe, por nombre del item (sin importar mayusculas ni
+    -- tildes).
+    createFilter = function(ui, x, y, w, h)
+        local box = ISTextEntryBox:new(ui.searchText or "", x, y, w, h)
+        box.font = UIFont.Small
+        box:initialise()
+        box:instantiate()
+        box:setPlaceholderText(getText("IGUI_EconomiaArgenta_Buscar"))
+        box:setClearButton(true)
+        box.onTextChange = function()
+            ui.searchText = box:getInternalText()
+            -- Lo seleccionado puede quedar fuera del filtro: se suelta, asi el
+            -- boton de comprar no actua sobre algo que ya no se ve.
+            ui.selectedId = nil
+            ui.selectedOffer = nil
+            ui.selectedEntry = nil
+            ui.controls.buyBtn:setEnable(false)
+            ui:updateBuyButtonTitle(nil)
+            ui:refreshGrid()
+        end
+        return {box}
+    end,
     getGridData = function(ui)
-        return ui.data
+        return ui:filteredData()
     end,
     actionLabel = function(ui, offer)
         -- price.selfPay is set by bakePrice() for kind="self" offers: the price
@@ -730,6 +754,54 @@ function UI:setMode(key, force)
     self:updateBuyButtonTitle(nil)
 end
 
+-- Economia Argenta: texto en minusculas y sin tildes, para que "municion"
+-- encuentre "Munición".
+local TILDES = {
+    ["á"] = "a",
+    ["é"] = "e",
+    ["í"] = "i",
+    ["ó"] = "o",
+    ["ú"] = "u",
+    ["ü"] = "u",
+    ["ñ"] = "n",
+    ["Á"] = "a",
+    ["É"] = "e",
+    ["Í"] = "i",
+    ["Ó"] = "o",
+    ["Ú"] = "u",
+    ["Ñ"] = "n"
+}
+local function normalizar(s)
+    s = tostring(s or ""):lower()
+    for con, sin in pairs(TILDES) do
+        s = s:gsub(con, sin)
+    end
+    return s
+end
+UI.normalizarBusqueda = normalizar
+
+--- Los datos de la tienda filtrados por el buscador. Sin texto, devuelve los
+--- datos tal cual.
+function UI:filteredData()
+    local data = self.data
+    local q = normalizar(self.searchText):gsub("^%s+", ""):gsub("%s+$", "")
+    if q == "" or not (data and data.offers) then
+        return data
+    end
+    local filtered = {}
+    for k, v in pairs(data) do
+        filtered[k] = v
+    end
+    filtered.offers = {}
+    for id, offer in pairs(data.offers) do
+        local nombre = tools.resolveOfferDisplayName(offer)
+        if normalizar(nombre):find(q, 1, true) or normalizar(offer.item):find(q, 1, true) then
+            filtered.offers[id] = offer
+        end
+    end
+    return filtered
+end
+
 --- Hand the grid whatever the active mode wants shown. A mode that does not
 --- care gets the payload, which is what buying has always used.
 function UI:refreshGrid()
@@ -742,6 +814,11 @@ function UI:refreshGrid()
 end
 
 function UI:setData(data)
+    -- Otra maquina: el buscador arranca vacio. La misma (reposicion): se
+    -- mantiene lo que se estaba buscando.
+    if self.shopKey ~= (data and data.key) then
+        self.searchText = nil
+    end
     self.data = data or {}
     self.shopKey = data and data.key
     self.selectedId = nil
@@ -1132,6 +1209,16 @@ function UI:onItemRightClick(id, offer, screenX, screenY)
     local context = ISContextMenu.get(self.playerIndex, screenX, screenY)
     context:clear()
 
+    -- Economia Argenta: lo simple primero. Cambiar el precio (o, en el Compro
+    -- Oro, lo que paga) escribiendo un numero, y volver al original.
+    if offer and offer.item then
+        local esPago = offer.price and offer.price.selfPay == true
+        context:addOption(getText(esPago and "IGUI_EconomiaArgenta_Admin_CambiarPago" or
+                                      "IGUI_EconomiaArgenta_Admin_CambiarPrecio"), self, UI.onEcoCambiarPrecio, offer,
+            esPago)
+        context:addOption(getText("IGUI_EconomiaArgenta_Admin_PrecioOriginal"), self, UI.onEcoPrecioOriginal, offer)
+    end
+
     -- Where this row came from, first, because "why does this cost that" is the
     -- question the shelf raises and the answer is never on the shelf. An offer's
     -- price is baked at compile time from its group, its item override or its
@@ -1175,6 +1262,55 @@ function UI:onItemRightClick(id, offer, screenX, screenY)
     blacklistMenu:addOption(getText("IGUI_PhunMart_Admin_BlacklistEverywhere"), self, UI.onBlacklistOffer, id, offer)
     local blacklistOpt = context:addOption(getText("IGUI_PhunMart_Btn_Blacklist"))
     context:addSubMenu(blacklistOpt, blacklistMenu)
+end
+
+-- ── Economia Argenta: cambiar precios desde la tienda (solo admin) ─────────
+
+--- Billetes que cuesta (o paga, en el Compro Oro) una oferta hoy.
+local function billetesDe(offer, esPago)
+    if esPago then
+        local a = offer.reward and offer.reward.actions and offer.reward.actions[1]
+        return a and a.amount and math.floor(a.amount / 100) or 0
+    end
+    local line = offer.price and offer.price.items and offer.price.items[1]
+    return line and line.amount or 0
+end
+
+function UI:onEcoCambiarPrecio(offer, esPago)
+    local nombre = tools.resolveOfferDisplayName(offer)
+    local actual = billetesDe(offer, esPago)
+    local titulo = getText(esPago and "IGUI_EconomiaArgenta_Admin_PreguntaPago" or
+                               "IGUI_EconomiaArgenta_Admin_PreguntaPrecio", nombre, tostring(actual))
+    local w, h = 320, 140
+    local modal = ISTextBox:new(getCore():getScreenWidth() / 2 - w / 2, getCore():getScreenHeight() / 2 - h / 2, w, h,
+        titulo, tostring(actual), self, function(target, button)
+            if button.internal ~= "OK" then
+                return
+            end
+            local n = tonumber(button.parent.entry:getText())
+            if not n or n < 1 or n > 999 or n ~= math.floor(n) then
+                target:showFeedback(getText("IGUI_EconomiaArgenta_Admin_NumeroInvalido"), 0.9, 0.3, 0.3)
+                return
+            end
+            sendClientCommand(target.player, Core.name, "ecoCambiarPrecio", {
+                item = offer.item,
+                billetes = n,
+                pago = esPago
+            })
+            target:showFeedback(getText("IGUI_EconomiaArgenta_Admin_PrecioGuardado", nombre, tostring(n)), 0.3, 0.8,
+                0.3)
+        end)
+    modal:initialise()
+    modal:addToUIManager()
+    modal:setOnlyNumbers(true)
+end
+
+function UI:onEcoPrecioOriginal(offer)
+    sendClientCommand(self.player, Core.name, "ecoPrecioOriginal", {
+        item = offer.item
+    })
+    self:showFeedback(getText("IGUI_EconomiaArgenta_Admin_PrecioRestaurado", tools.resolveOfferDisplayName(offer)), 0.3,
+        0.8, 0.3)
 end
 
 -- Reached through Core.ui rather than required, the same way this panel reaches

@@ -54,9 +54,9 @@ local prices = {
     }
 }
 
--- Escalera eco_1 .. eco_150: precio en billetes. Las tiendas y los items
+-- Escalera eco_1 .. eco_999: precio en billetes. Las tiendas y los items
 -- referencian estas claves por nombre (eco_15 = 15 billetes).
-for n = 1, 150 do
+for n = 1, 999 do
     prices["eco_" .. n] = {
         inherit = "currency_base",
         amount = n * 100

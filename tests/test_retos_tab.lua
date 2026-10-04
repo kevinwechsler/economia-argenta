@@ -159,16 +159,22 @@ local datos = {
     activos = true,
     prueba = false,
     kills = 312,
-    cobradosKills = {
-        zombie_50 = true,
-        zombie_100 = true,
-        zombie_250 = true
-    },
-    cobrados = {
+    logrados = {
+        kills_50 = true,
+        kills_100 = true,
+        kills_250 = true,
         dias_3 = true,
         dias_7 = true,
         hab5_1 = true
     },
+    cobrados = {
+        kills_50 = true,
+        kills_100 = true,
+        dias_3 = true,
+        dias_7 = true,
+        hab5_1 = true
+    },
+    cadaCobrados = 0,
     muertes = 1,
     primeros = {
         primero_kills_1000 = "juan"
@@ -178,8 +184,11 @@ local datos = {
 local filas = armar(player, datos)
 ok("arma filas", #filas > 15, #filas)
 
+local k100 = buscar(filas, "Reto_Kills[100]")
+ok("100 kills cobrado", k100 and k100.estado == "cobrado")
 local k250 = buscar(filas, "Reto_Kills[250]")
-ok("250 kills cobrado", k250 and k250.estado == "cobrado")
+ok("250 kills logrado: listo para reclamar", k250 and k250.estado == "listo" and k250.clave == "kills_250")
+ok("aviso arriba: 1 premio para reclamar", filas[1].tipo == "listos" and filas[1].texto:find("[1]", 1, true), filas[1].texto)
 local k500 = buscar(filas, "Reto_Kills[500]")
 ok("500 kills en progreso", k500 and k500.estado == "progreso")
 ok("500 kills: faltan 188", k500 and k500.detalle and k500.detalle:find("188", 1, true), k500 and k500.detalle)
@@ -217,8 +226,24 @@ print("-- modo prueba --")
 SandboxVars.EconomiaArgenta.ModoPruebaRetos = true
 datos.prueba = true
 filas = armar(player, datos)
-ok("muestra el aviso de modo prueba", filas[1].tipo == "aviso")
+local hayPrueba = false
+for _, f in ipairs(filas) do
+    if f.tipo == "aviso" then
+        hayPrueba = true
+    end
+end
+ok("muestra el aviso de modo prueba", hayPrueba)
 ok("el reto de 50 kills pasa a 1", buscar(filas, "Reto_Kills[1]") ~= nil)
+
+print("-- cada 1000 kills --")
+SandboxVars.EconomiaArgenta.ModoPruebaRetos = false
+local filasCada = armar(player, {activos = true, kills = 2100, cadaCobrados = 0, logrados = {}, cobrados = {}})
+local cada = buscar(filasCada, "Retos_CadaKills")
+ok("2100 kills: el recurrente se puede reclamar", cada and cada.estado == "listo" and cada.clave == "kills_cada")
+ok("2100 kills: paga 2 vueltas (60)", cada and cada.premio == 60, cada and cada.premio)
+filasCada = armar(player, {activos = true, kills = 2100, cadaCobrados = 2, logrados = {}, cobrados = {}})
+cada = buscar(filasCada, "Retos_CadaKills")
+ok("ya cobrado: vuelve a progreso", cada and cada.estado == "progreso")
 
 print("-- sin datos todavia / vacio --")
 filas = armar(player, {

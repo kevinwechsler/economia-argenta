@@ -1088,7 +1088,8 @@ end
 -- Economia Argenta: subir este numero cada vez que cambian precios o
 -- catalogo, para que las maquinas ya colocadas se actualicen solas.
 -- 2 = precios por item con nombre completo (antes todo quedaba en 1 billete).
-Core.defsRevision = 2
+-- 3 = pagos del Compro Oro de 1 a 999 (para que el admin los pueda cambiar).
+Core.defsRevision = 3
 
 --- Which shop types that revision affects, or nil for all of them.
 ---

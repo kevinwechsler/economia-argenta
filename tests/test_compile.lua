@@ -198,30 +198,46 @@ local action = offer and offer.reward and offer.reward.actions and offer.reward.
 ok("5 de plata pagan 1 billete", action and action.amount == 100, action and tostring(action.amount))
 ok("no hay almacen", runtime.shops["GoodPhoods"] == nil)
 
+print("-- precio cambiado por el admin --")
+-- Lo que guarda "Cambiar precio..." (precios_admin.lua) en PhunMart_Items.json
+local rtAdmin = Core.compileWith({
+    items = {
+        ["Base.Katana"] = {
+            price = "eco_100"
+        },
+        ["Base.Ring_Left_RingFinger_Silver"] = {
+            reward = "eco_pago_3"
+        }
+    }
+})
+local function ofertaEn(rt, pool, item)
+    for _, o in pairs((rt.pools[pool] or {}).offers or {}) do
+        if o.item == item then
+            return o
+        end
+    end
+end
+local kat = ofertaEn(rtAdmin, "pool_eco_armeria", "Base.Katana")
+ok("el admin sube la katana a 100", kat and kat.price.items[1].amount == 100, kat and kat.price.items[1].amount)
+local mach = ofertaEn(rtAdmin, "pool_eco_armeria", "Base.Machete")
+ok("el resto no cambia (machete 25)", mach and mach.price.items[1].amount == 25)
+local anillo = ofertaEn(rtAdmin, "pool_eco_compro_oro", "Base.Ring_Left_RingFinger_Silver")
+local accion = anillo and anillo.reward and anillo.reward.actions and anillo.reward.actions[1]
+ok("el admin cambia el pago de la plata a 3", accion and accion.amount == 300, accion and accion.amount)
+ok("la plata se sigue entregando de a 5", anillo and anillo.price.amount == 5)
+ok("hay precios hasta 999", Core.defs.prices.eco_999 ~= nil)
+Core.compileWith({})
+
 print("-- retos individuales --")
 SandboxVars.EconomiaArgenta.RecompensasKills = true
 package.loaded["PhunMart/defaults/token_rewards"] = nil
 local retos = require "PhunMart/defaults/token_rewards"
-ok("hay retos de zombies", retos.zombieKills and #retos.zombieKills > 0)
-ok("sin retos de corredores", retos.sprinterKills == nil)
-local todosPesos = true
-for _, lista in ipairs({retos.zombieKills or {}, retos.sprinterKills or {}}) do
-    for _, r in ipairs(lista) do
-        local premio = r.rewards and r.rewards[1]
-        if not (premio and premio.item == "Base.Money" and (premio.amount or 0) > 0 and (r.kills or r.everyKills)) then
-            todosPesos = false
-        end
-    end
-end
-ok("todos los retos pagan billetes", todosPesos)
-SandboxVars.EconomiaArgenta.RecompensasKills = false
-package.loaded["PhunMart/defaults/token_rewards"] = nil
-local apagados = require "PhunMart/defaults/token_rewards"
 local cantidad = 0
-for _ in pairs(apagados) do
+for _ in pairs(retos) do
     cantidad = cantidad + 1
 end
-ok("apagados no hay retos", cantidad == 0)
+ok("el motor no paga kills solo (se reclaman a mano)", cantidad == 0)
+SandboxVars.EconomiaArgenta.RecompensasKills = false
 
 print("-- modo prueba de retos --")
 local Def = require "EconomiaArgenta/retos_def"
@@ -239,9 +255,6 @@ ok("prueba: 3 dias pasan a menos de 2 horas", prueba.dias[1].dias * 24 < 2, tost
 ok("prueba: habilidades a nivel 1", prueba.habilidades[4].nivel == 1)
 ok("prueba: los premios no cambian", prueba.kills[5].pago == normal.kills[5].pago)
 ok("la definicion original no se toca", Def.kills[1].kills == 50)
-package.loaded["PhunMart/defaults/token_rewards"] = nil
-local retosPrueba = require "PhunMart/defaults/token_rewards"
-ok("prueba: token_rewards usa los objetivos chicos", retosPrueba.zombieKills[1].kills == 1)
 SandboxVars.EconomiaArgenta.ModoPruebaRetos = false
 SandboxVars.EconomiaArgenta.RecompensasKills = false
 
