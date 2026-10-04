@@ -250,3 +250,11 @@ option EconomiaArgenta.FajosEnElMundo
     page = EconomiaArgenta,
     translation = EconomiaArgenta_FajosEnElMundo,
 }
+
+option EconomiaArgenta.ModoPruebaRetos
+{
+    type = boolean,
+    default = false,
+    page = EconomiaArgenta,
+    translation = EconomiaArgenta_ModoPruebaRetos,
+}

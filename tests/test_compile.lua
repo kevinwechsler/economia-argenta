@@ -223,6 +223,28 @@ for _ in pairs(apagados) do
 end
 ok("apagados no hay retos", cantidad == 0)
 
+print("-- modo prueba de retos --")
+local Def = require "EconomiaArgenta/retos_def"
+SandboxVars.EconomiaArgenta.RecompensasKills = true
+SandboxVars.EconomiaArgenta.ModoPruebaRetos = false
+local normal = Def.actuales()
+ok("normal: primer reto a 50 kills", normal.kills[1].kills == 50, tostring(normal.kills[1].kills))
+ok("normal: 30 dias son 30", normal.dias[4].dias == 30, tostring(normal.dias[4].dias))
+ok("normal: habilidad a nivel 10", normal.habilidades[4].nivel == 10)
+SandboxVars.EconomiaArgenta.ModoPruebaRetos = true
+local prueba = Def.actuales()
+ok("prueba: 50 kills pasan a 1", prueba.kills[1].kills == 1, tostring(prueba.kills[1].kills))
+ok("prueba: 1000 kills pasan a 20", prueba.kills[5].kills == 20, tostring(prueba.kills[5].kills))
+ok("prueba: 3 dias pasan a menos de 2 horas", prueba.dias[1].dias * 24 < 2, tostring(prueba.dias[1].dias))
+ok("prueba: habilidades a nivel 1", prueba.habilidades[4].nivel == 1)
+ok("prueba: los premios no cambian", prueba.kills[5].pago == normal.kills[5].pago)
+ok("la definicion original no se toca", Def.kills[1].kills == 50)
+package.loaded["PhunMart/defaults/token_rewards"] = nil
+local retosPrueba = require "PhunMart/defaults/token_rewards"
+ok("prueba: token_rewards usa los objetivos chicos", retosPrueba.zombieKills[1].kills == 1)
+SandboxVars.EconomiaArgenta.ModoPruebaRetos = false
+SandboxVars.EconomiaArgenta.RecompensasKills = false
+
 print("")
 print(string.format("%d passed, %d failed", passed, failed))
 os.exit(failed == 0 and 0 or 1)

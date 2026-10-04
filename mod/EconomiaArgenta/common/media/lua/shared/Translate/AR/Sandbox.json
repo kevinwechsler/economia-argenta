@@ -60,5 +60,7 @@
   "Sandbox_EconomiaArgenta_CantidadBilletes": "Billetes en el mundo",
   "Sandbox_EconomiaArgenta_CantidadBilletes_tooltip": "Probabilidad de encontrar billetes, en porcentaje de lo normal del juego. 15 = bastante menos que lo normal (cada billete vale mucho). 100 = como el juego original.",
   "Sandbox_EconomiaArgenta_FajosEnElMundo": "Fajos de billetes en el mundo",
-  "Sandbox_EconomiaArgenta_FajosEnElMundo_tooltip": "Si est\u00e1 apagado no aparecen fajos (cada uno trae 100 billetes y romper\u00eda la econom\u00eda)."
+  "Sandbox_EconomiaArgenta_FajosEnElMundo_tooltip": "Si est\u00e1 apagado no aparecen fajos (cada uno trae 100 billetes y romper\u00eda la econom\u00eda).",
+  "Sandbox_EconomiaArgenta_ModoPruebaRetos": "Modo prueba de retos",
+  "Sandbox_EconomiaArgenta_ModoPruebaRetos_tooltip": "Solo para probar: divide por 50 los objetivos de kills y d\u00edas y baja las habilidades a nivel 1. Los retos se revisan cada minuto. NO dejarlo prendido en el server de verdad."
 }

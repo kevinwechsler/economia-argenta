@@ -60,5 +60,7 @@
   "Sandbox_EconomiaArgenta_CantidadBilletes": "Bills in the world",
   "Sandbox_EconomiaArgenta_CantidadBilletes_tooltip": "Chance to find bills, as a percentage of the game's normal rate. 15 = much rarer (each bill is worth a lot). 100 = vanilla.",
   "Sandbox_EconomiaArgenta_FajosEnElMundo": "Money bundles in the world",
-  "Sandbox_EconomiaArgenta_FajosEnElMundo_tooltip": "When off, no money bundles spawn (each holds 100 bills and would break the economy)."
+  "Sandbox_EconomiaArgenta_FajosEnElMundo_tooltip": "When off, no money bundles spawn (each holds 100 bills and would break the economy).",
+  "Sandbox_EconomiaArgenta_ModoPruebaRetos": "Challenge test mode",
+  "Sandbox_EconomiaArgenta_ModoPruebaRetos_tooltip": "Testing only: divides kill and day goals by 50 and lowers skill goals to level 1. Challenges are checked every minute. Do NOT leave it on in the real server."
 }

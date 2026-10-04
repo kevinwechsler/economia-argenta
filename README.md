@@ -26,8 +26,9 @@ GPL-3.0 (ver [LICENSE](LICENSE)).
 | Qué | Archivo |
 |---|---|
 | Qué vende cada tienda y a cuánto | `media/lua/shared/PhunMart/defaults/catalogo.lua` (único lugar de precios) |
-| Retos de kills | `media/lua/shared/PhunMart/defaults/token_rewards.lua` |
-| Retos de supervivencia, habilidades y "primero del server" | `media/lua/server/EconomiaArgenta/retos.lua` |
+| Objetivos y premios de TODOS los retos | `media/lua/shared/EconomiaArgenta/retos_def.lua` (único lugar) |
+| Cobro de retos (server) | `media/lua/server/EconomiaArgenta/retos.lua` y, para kills, `defaults/token_rewards.lua` |
+| Pestaña "Retos" (tecla 0) | `media/lua/client/EconomiaArgenta/retos_tab.lua` |
 | Cuántos billetes hay en el mundo | `media/lua/server/EconomiaArgenta/billetes.lua` + sandbox |
 | Opciones de la partida | `media/sandbox-options.txt` (página "Economía Argenta") |
 | Textos | `media/lua/shared/Translate/{AR,ES,EN}/` (el juego en "Español (Argentina)" usa AR) |
