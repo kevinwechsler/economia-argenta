@@ -5,7 +5,7 @@
 local here = arg[0]:match("^(.*)[/\\][^/\\]*$") or "."
 local root = here .. "/.."
 local phunTests = root .. "/tests/harness"
-local ecoShared = root .. "/mod/EcoPesos/common/media/lua/shared"
+local ecoShared = root .. "/mod/EconomiaArgenta/common/media/lua/shared"
 
 package.path = phunTests .. "/?.lua;" .. ecoShared .. "/?.lua;" .. package.path
 
@@ -48,7 +48,7 @@ _G.SandboxVars = {
     PhunMart = {
         Debug = false
     },
-    EcoPesos = {
+    EconomiaArgenta = {
         FactorPrecios = 100,
         FactorCompraOro = 100,
         RecompensasKills = false
@@ -118,7 +118,7 @@ local amt, item = Core.currencyValueOf(1500)
 ok("un pago de 1500 centavos son 15 billetes", amt == 15 and item == "Base.Money", tostring(amt) .. " " .. tostring(item))
 
 print("-- tiendas --")
-for _, name in ipairs({"GoodPhoods", "PittyTheTool", "FinalAmendment", "PrawnStars"}) do
+for _, name in ipairs({"PittyTheTool", "FinalAmendment", "PrawnStars"}) do
     local shop = runtime.shops[name]
     ok(name .. " existe en runtime", shop ~= nil)
     if shop then
@@ -142,7 +142,7 @@ if pool then
     if sample then
         local p = sample.price
         local amount = p and p.items and p.items[1] and p.items[1].amount
-        ok("la escopeta cuesta 300 billetes", amount == 300, tostring(amount) .. " kind=" .. tostring(p and p.kind))
+        ok("la escopeta cuesta 36 billetes", amount == 36, tostring(amount) .. " kind=" .. tostring(p and p.kind))
     else
         ok("hay una oferta de escopeta", false, "no se encontro Shotgun")
     end
@@ -161,16 +161,40 @@ if oro then
         sample and sample.price and sample.price.kind)
     local reward = sample and sample.reward
     local action = reward and reward.actions and reward.actions[1]
-    ok("el diamante paga 150 pesos", action and action.type == "adjustBalance" and action.amount == 15000,
+    ok("el diamante paga 10 billetes", action and action.type == "adjustBalance" and action.amount == 1000,
         action and tostring(action.amount))
 end
 
+print("-- catalogo --")
+local function precioDe(pool, item)
+    for _, offer in pairs((runtime.pools[pool] or {}).offers or {}) do
+        if offer.item == item then
+            local p = offer.price
+            return p and p.kind, p and (p.items and p.items[1] and p.items[1].amount or p.amount), offer
+        end
+    end
+end
+local k, a = precioDe("pool_eco_armeria", "Katana")
+ok("la katana cuesta 48 billetes", a == 48, tostring(a))
+k, a = precioDe("pool_eco_armeria", "Bullets9mmBox")
+ok("una caja de 9mm cuesta 3 billetes", a == 3, tostring(a))
+k, a = precioDe("pool_eco_ferreteria", "NailsBox")
+ok("una caja de clavos cuesta 1 billete", a == 1, tostring(a))
+k, a = precioDe("pool_eco_ferreteria", "Hammer")
+ok("la ferreteria no vende herramientas", k == nil)
+local kind, amount, offer = precioDe("pool_eco_compro_oro", "Ring_Left_RingFinger_Silver")
+ok("la plata se entrega de a 5", kind == "items" or kind == "self", tostring(kind))
+ok("cantidad a entregar de plata = 5", amount == 5, tostring(amount))
+local action = offer and offer.reward and offer.reward.actions and offer.reward.actions[1]
+ok("5 de plata pagan 1 billete", action and action.amount == 100, action and tostring(action.amount))
+ok("no hay almacen", runtime.shops["GoodPhoods"] == nil)
+
 print("-- retos individuales --")
-SandboxVars.EcoPesos.RecompensasKills = true
+SandboxVars.EconomiaArgenta.RecompensasKills = true
 package.loaded["PhunMart/defaults/token_rewards"] = nil
 local retos = require "PhunMart/defaults/token_rewards"
 ok("hay retos de zombies", retos.zombieKills and #retos.zombieKills > 0)
-ok("hay retos de corredores", retos.sprinterKills and #retos.sprinterKills > 0)
+ok("sin retos de corredores", retos.sprinterKills == nil)
 local todosPesos = true
 for _, lista in ipairs({retos.zombieKills or {}, retos.sprinterKills or {}}) do
     for _, r in ipairs(lista) do
@@ -181,7 +205,7 @@ for _, lista in ipairs({retos.zombieKills or {}, retos.sprinterKills or {}}) do
     end
 end
 ok("todos los retos pagan billetes", todosPesos)
-SandboxVars.EcoPesos.RecompensasKills = false
+SandboxVars.EconomiaArgenta.RecompensasKills = false
 package.loaded["PhunMart/defaults/token_rewards"] = nil
 local apagados = require "PhunMart/defaults/token_rewards"
 local cantidad = 0

@@ -1,0 +1,10 @@
+name=Economía Argenta
+id=EconomiaArgenta
+description=Economía realista en pesos: la plata se encuentra en el mundo y vale, se canjean joyas en el Compro Oro y se compra en tiendas fijas colocadas por el admin. Incluye retos individuales y premios únicos para el primero del server. Motor de tiendas basado en PhunMart 2 de UburGeek / PhunZoider (GPL-3.0), incluido y adaptado. Código abierto.
+author=Kevin
+modversion=0.3.0
+versionMin=42.20
+poster=poster.png
+icon=icon.png
+pack=phunmart
+tiledef=phunmart 1420

@@ -1,87 +1,64 @@
-# Eco Pesos: economía argentina para Project Zomboid (Build 42)
+# Economía Argenta: mod de economía para Project Zomboid (Build 42)
 
 Mod de economía para jugar con amigos en un server. **Es un mod independiente**:
 no requiere ningún otro mod. El motor de tiendas (interfaz, compra segura en
 multiplayer, colocación de tiendas y panel de admin) viene de
 [PhunMart 2](https://github.com/PhunZoider/PhunMart) de UburGeek / PhunZoider,
-incluido y adaptado bajo su licencia GPL-3.0. Eco Pesos también es GPL-3.0
-(ver [LICENSE](LICENSE)).
+incluido y adaptado bajo su licencia GPL-3.0. Economía Argenta también es
+GPL-3.0 (ver [LICENSE](LICENSE)).
 
 ## Reglas del juego
 
 | Regla | Cómo se resuelve |
 |---|---|
-| La plata se encuentra en el mundo, no se gana matando zombies | La moneda es el billete vanilla `Base.Money`. Ya aparece en cajas registradoras, bancos, lockers, carteras y zombies "de clase alta". Los pagos de zombies del motor vienen apagados. |
-| Joyas, piedras y lingotes se canjean por plata | Tienda **Compro Oro**: entregás el item y recibís billetes físicos. |
-| Solo se compran ciertas armas, equipo y comida | Tres tiendas con catálogo fijo: **Almacén**, **Ferretería**, **Armería**. |
+| La plata se encuentra en el mundo | Billete vanilla `Base.Money`, con ícono propio. Aparece mucho menos que en el juego normal (sandbox `CantidadBilletes`, 15% por defecto) y sin fajos. |
+| Un billete vale mucho | 5 billetes = una caja de balas, ~15 = una pistola, 100+ = un rifle de asalto. Nadie carga cientos. |
+| Joyas y monedas se canjean | **Compro Oro**: plata 5 por 1 billete, oro 2 por 1, piedras, lingotes y diamantes pagan más. |
+| Solo se compran ciertas cosas | **Armería** (armas, munición, cargadores, accesorios) y **Ferretería** (consumibles chicos para construir). Sin comida, herramientas, bolsos ni ropa. |
 | Stock infinito, precios fijos | Pools `sticky` sin stock. |
-| Si morís, la plata queda en el cuerpo | Gratis: los billetes son un item físico en el inventario del cadáver. |
-| NO se pueden vender items | No existe esa opción. Solo el Compro Oro acepta joyas. |
-| Tiendas fijas en cada ciudad | `probability = 0` y conversión de expendedoras en 0: las coloca el admin a mano. |
-| Ajustes desde la UI | Sandbox "Eco Pesos": factor de precios, factor del Compro Oro, recompensas por kills. El panel de admin del motor permite editar precios y catálogo dentro del juego. |
-| Recompensas por kills (opcional) | Apagado por defecto. Paga billetes en hitos de kills. |
+| Si morís, la plata queda en el cuerpo | Los billetes son un item físico. |
+| NO se pueden vender items | Solo el Compro Oro acepta joyas. |
+| Tiendas fijas | Las coloca el admin a mano. |
+| Retos individuales | Kills, días sin morir, inicio limpio, habilidades, y "primero del server" con aviso a todos. |
 
-Pendientes: intercambio entre jugadores con ventana, billetes con estética de
-pesos, arte propio de mostrador con vendedor, traducción al español del resto
-de la interfaz del motor.
+## Dónde se toca cada cosa
 
-## Estructura
+| Qué | Archivo |
+|---|---|
+| Qué vende cada tienda y a cuánto | `media/lua/shared/PhunMart/defaults/catalogo.lua` (único lugar de precios) |
+| Retos de kills | `media/lua/shared/PhunMart/defaults/token_rewards.lua` |
+| Retos de supervivencia, habilidades y "primero del server" | `media/lua/server/EconomiaArgenta/retos.lua` |
+| Cuántos billetes hay en el mundo | `media/lua/server/EconomiaArgenta/billetes.lua` + sandbox |
+| Opciones de la partida | `media/sandbox-options.txt` (página "Economía Argenta") |
+| Textos | `media/lua/shared/Translate/{AR,ES,EN}/` (el juego en "Español (Argentina)" usa AR) |
+| Ícono del billete | `media/textures/Item_Money.png`, generado con `arte/hacer_icono.ps1` desde `arte/billete_original.jpg` |
 
-```
-mod/EcoPesos/common/
-  mod.info                                  id=EcoPesos (sin dependencias)
-  media/sandbox-options.txt                 opciones del motor (página "Eco Pesos - Motor") + las nuestras (página "Eco Pesos")
-  media/lua/shared/PhunMart/defaults/       LAS REGLAS DE ECO PESOS (lo que más vas a tocar)
-    prices.lua        moneda = Base.Money y escalera de precios eco_N
-    specials.lua      cuánto paga el Compro Oro
-    groups.lua        qué vende cada tienda
-    items.lua         precios por item (pisan al del grupo)
-    pools.lua         pools fijos (sticky)
-    shops.lua         las 4 tiendas
-    token_rewards.lua hitos de kills (opcional)
-    conditions.lua, blacklist.lua   del motor, sin uso especial
-  media/lua/shared/PhunMart/                motor: compilador, moneda, utilidades
-  media/lua/server/PhunMart_Server/         motor: lado servidor (compras, stock, colocación)
-  media/lua/client/PhunMart_Client/         motor: interfaz de tienda y panel de admin
-  media/lua/shared/Translate/{EN,ES}/       textos
-  media/scripts/, textures/, texturepacks/  items y arte de las máquinas (del motor)
-tests/test_compile.lua                      compila las definiciones con el compilador real
-tests/harness/harness.lua                   simula el runtime del juego (del motor)
-ref/PhunMart/                               clon original de referencia (ignorado por git)
-```
+Todo bajo `mod/EconomiaArgenta/common/`. El motor vive en
+`media/lua/{client,server,shared}/PhunMart*` (nombre interno, no se cambia
+para no romperlo).
 
-## Probar en local (single player)
+## Probar en local
 
-1. Copiar el mod a la carpeta de mods del juego:
+1. Copiar el mod al juego:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File deploy.ps1
 ```
 
-2. Abrir el juego → Mods → activar **Eco Pesos**.
-3. Nueva partida. Las opciones de sandbox ya vienen configuradas; en la página
-   **Eco Pesos** podés tocar los factores.
-4. Entrar con `-debug` (propiedades del juego en Steam → opciones de
-   lanzamiento) para tener el menú de admin en single player.
+2. Steam → Project Zomboid → Propiedades → Configuraciones de lanzamiento: `-debug`.
+3. En el juego, Mods → activar **Economía Argenta** → partida nueva.
 
 ## Colocar una tienda
 
-El juego tiene que estar en modo debug (Steam → Project Zomboid →
-Propiedades → Opciones de lanzamiento: `-debug`).
-
-1. En la partida, menú de debug → **Items List** → buscar `Eco Tienda`.
-2. Agregar al inventario la que quieras: Almacén, Ferretería, Armería o
-   Compro Oro.
-3. Colocarla en el piso como un mueble.
-4. Click derecho sobre la máquina → **View Almacén** (o la que sea) → se
-   abre la tienda.
+1. Menú de debug → **Items List** → buscar `Armería`, `Ferretería` o `Compro Oro`.
+2. Agregarla al inventario y colocarla en el piso como un mueble.
+3. Click derecho sobre la máquina → **Ver Armería** (o la que sea).
 
 En server se hace igual con un usuario admin.
 
-Nota técnica: el motor reconoce cada tienda por el nombre interno del tile
-del mueble (`CustomName`). Por eso las claves en `shops.lua` son
-`GoodPhoods`, `PittyTheTool`, `FinalAmendment` y `PrawnStars`, aunque en
-pantalla se llamen Almacén, Ferretería, Armería y Compro Oro.
+Nota técnica: el motor reconoce cada tienda por el `CustomName` del tile de la
+máquina, por eso las claves en `shops.lua` son `PittyTheTool` (Ferretería),
+`FinalAmendment` (Armería) y `PrawnStars` (Compro Oro).
 
 ## Validar sin abrir el juego
 
@@ -91,18 +68,13 @@ Necesita LuaJIT (`winget install --id DEVCOM.LuaJIT --source winget`).
 & "$env:LOCALAPPDATA\Programs\LuaJIT\bin\luajit.exe" tests\test_compile.lua
 ```
 
-## Convenciones de precios
-
-El motor escribe montos en centavos. `currency_base` tiene `factor = 0.01`,
-así que `amount = 500` son 5 billetes. Los helpers `pesos(n)` en `prices.lua`
-y `pago(n)` en `specials.lua` ya hacen esa cuenta: escribí siempre en pesos.
-Los items en `groups.lua` e `items.lua` van por nombre pelado (`Shotgun`,
-no `Base.Shotgun`).
+Importante: todos los archivos de texto tienen que ser UTF-8 **sin BOM**; el
+juego no arranca si no. `deploy.ps1` lo controla.
 
 ## Créditos
 
 - Motor de tiendas: PhunMart 2 por UburGeek / PhunZoider,
-  https://github.com/PhunZoider/PhunMart (GPL-3.0). Modificado para Eco Pesos:
-  catálogos, moneda, opciones por defecto y textos propios; sin XP, traits ni
-  animales.
-- Eco Pesos por Kevin.
+  https://github.com/PhunZoider/PhunMart (GPL-3.0). Modificado: catálogos,
+  moneda, opciones, textos y retos propios; sin billetera, XP, traits,
+  vehículos ni animales.
+- Economía Argenta por Kevin.

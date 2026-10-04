@@ -1,0 +1,143 @@
+if isClient() then
+    return
+end
+
+require "PhunMart/core"
+local Core = PhunMart
+
+Core.killRewards = {}
+local R = Core.killRewards
+
+-- Held in ModData, so it belongs to the save the kills were made in.
+--
+-- This was PhunMart_KillTracking.txt, which had the install lifetime rather
+-- than the save's: totals and claimed milestones carried across a wipe, and
+-- every world on the machine shared one set of them.
+--
+-- username → {
+--   zombieKills  = N,   -- total cumulative normal zombie kills
+--   sprinterKills = N,  -- total cumulative sprinter kills
+--   claimed = {         -- set of milestone keys already rewarded
+--     ["zombie_100"] = true,
+--     ["sprinter_50"] = true,
+--     ...
+--   }
+-- }
+R.data = {}
+
+-- The key singleplayer files its progress under. The string "0" and not the
+-- number 0, which is what it used to be: the legacy import reads a converted
+-- PhunMart_KillTracking.json, and JSON object keys are necessarily strings, so
+-- a number on this side would never match the record coming in. "0" rather
+-- than a readable name because that is what the old number turns into through
+-- the converter. Same constant in wallet.lua and rewards_playtime.lua.
+local SP_KEY = "0"
+
+function R:load()
+    self.data = ModData.getOrCreate("PhunMart_KillTracking")
+    self.loaded = true
+end
+
+-- Returns the persistent data record for a player, creating it if absent.
+-- In SP, getUsername() returns the character name which changes per playthrough,
+-- so we key on a constant to preserve progress across characters.
+function R:getPlayerData(username)
+    if Core.isLocal then
+        username = SP_KEY
+    end
+    if not self.data[username] then
+        self.data[username] = {
+            zombieKills = 0,
+            sprinterKills = 0,
+            claimed = {}
+        }
+    end
+    local pd = self.data[username]
+    if not pd.zombieKills then
+        pd.zombieKills = 0
+    end
+    if not pd.sprinterKills then
+        pd.sprinterKills = 0
+    end
+    if not pd.claimed then
+        pd.claimed = {}
+    end
+    return pd
+end
+
+-- Check a kill milestone list against a current cumulative count.
+-- Grants any unclaimed milestones whose threshold is met.
+-- milestones: array of { kills=N, rewards={{item,amount},...} }
+-- prefix: string used to key the claim record (e.g. "zombie" or "sprinter")
+local function checkMilestones(player, pd, milestones, count, prefix)
+    if not milestones then
+        return
+    end
+    local username = player:getUsername()
+    for _, entry in ipairs(milestones) do
+        if entry.kills and count >= entry.kills then
+            local key = prefix .. "_" .. tostring(entry.kills)
+            if not pd.claimed[key] then
+                pd.claimed[key] = true
+                for _, reward in ipairs(entry.rewards or {}) do
+                    Core:grantConfigReward(player, reward, "kill milestone: " .. entry.kills .. " " .. prefix .. "s", {
+                        kind = prefix,
+                        kills = entry.kills
+                    })
+                end
+                Core.debugLn("[KillRewards] " .. username .. " claimed milestone " .. key)
+            end
+        elseif entry.everyKills and entry.everyKills > 0 then
+            local key = prefix .. "_every_" .. tostring(entry.everyKills)
+            local multiple = math.floor(count / entry.everyKills)
+            if pd.claimed[key] == nil then
+                pd.claimed[key] = multiple
+                Core.debugLn("[KillRewards] " .. username .. " initialized recurring baseline " .. key .. " at " ..
+                                 multiple)
+            elseif multiple > pd.claimed[key] then
+                local gained = multiple - pd.claimed[key]
+                pd.claimed[key] = multiple
+                for _ = 1, gained do
+                    for _, reward in ipairs(entry.rewards or {}) do
+                        Core:grantConfigReward(player, reward, "every " .. entry.everyKills .. " " .. prefix .. "s", {
+                            kind = prefix,
+                            kills = multiple * entry.everyKills,
+                            every = true
+                        })
+                    end
+                end
+                Core.debugLn("[KillRewards] " .. username .. " claimed " .. gained .. "x recurring " .. key)
+            end
+        end
+    end
+end
+
+-- Called by the server command handler when a client reports a batch of kills.
+-- normal:   count of non-sprinter zombies killed this batch
+-- sprinter: count of sprinter zombies killed this batch
+function R:reportKills(player, normal, sprinter)
+    if not self.loaded then
+        return
+    end
+    local eco = SandboxVars and SandboxVars.EconomiaArgenta
+    if not (eco and eco.RecompensasKills) then
+        return
+    end
+    local username = player:getUsername()
+    local pd = self:getPlayerData(username)
+
+    -- Accumulate
+    if normal > 0 then
+        pd.zombieKills = pd.zombieKills + normal
+    end
+    if sprinter > 0 then
+        pd.sprinterKills = pd.sprinterKills + sprinter
+    end
+
+    -- Check milestones
+    local cfg = Core.tokenRewardsCfg or {}
+    if normal > 0 or sprinter > 0 then
+        checkMilestones(player, pd, cfg.zombieKills, pd.zombieKills, "zombie")
+        checkMilestones(player, pd, cfg.sprinterKills, pd.sprinterKills, "sprinter")
+    end
+end

@@ -1,0 +1,38 @@
+module PhunMart
+{
+    imports
+    {
+        Base,
+    }
+
+    item PittyTheTool
+    {
+        DisplayCategory   = Furniture,
+        ItemType          = base:moveable,
+        Icon              = VendingMachine,
+        Weight            = 250,
+        DisplayName       = Ferretería,
+        WorldObjectSprite = phunmart_01_24,
+    }
+
+    item FinalAmendment
+    {
+        DisplayCategory   = Furniture,
+        ItemType          = base:moveable,
+        Icon              = VendingMachine,
+        Weight            = 250,
+        DisplayName       = Armería,
+        WorldObjectSprite = phunmart_01_32,
+    }
+
+    item PrawnStars
+    {
+        DisplayCategory   = Furniture,
+        ItemType          = base:moveable,
+        Icon              = VendingMachine,
+        Weight            = 250,
+        DisplayName       = Compro Oro,
+        WorldObjectSprite = phunmart_03_32,
+    }
+
+}
