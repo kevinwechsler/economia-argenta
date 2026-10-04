@@ -167,26 +167,31 @@ M.ferreteria = {{
 -- Compro Oro: el jugador ENTREGA el item y recibe billetes.
 -- `entrega` = cuantas unidades hay que dar, `pago` = billetes que recibe.
 -- Las joyas abundan en los zombies, por eso las comunes pagan poco.
+--
+-- Un elemento entre llaves {...} es UNA fila con variantes: se muestra el
+-- primero y se acepta cualquiera de ellos como pago (anillo izquierdo o
+-- derecho, dedo anular o mayor, etc., que el juego llama igual).
 -- =========================================================
 M.compro_oro = {{
     key = "eco_oro_plata",
     label = "Plata (5 por 1 billete)",
     entrega = 5,
     pago = 1,
-    items = {"Bracelet_BangleLeftSilver", "Bracelet_BangleRightSilver", "Bracelet_ChainLeftSilver",
-             "Bracelet_ChainRightSilver", "Necklace_Silver", "NecklaceLong_Silver", "Necklace_SilverCrucifix",
-             "Earring_Stud_Silver", "Earring_LoopLrg_Silver", "Earring_LoopMed_Silver", "Ring_Right_RingFinger_Silver",
-             "Ring_Left_RingFinger_Silver", "Ring_Right_MiddleFinger_Silver", "Ring_Left_MiddleFinger_Silver",
-             "SilverScrap", "SilverCoin"}
+    items = {{"Bracelet_BangleLeftSilver", "Bracelet_BangleRightSilver", "Bracelet_ChainLeftSilver",
+              "Bracelet_ChainRightSilver"}, {"Ring_Right_RingFinger_Silver", "Ring_Left_RingFinger_Silver",
+                                             "Ring_Right_MiddleFinger_Silver", "Ring_Left_MiddleFinger_Silver"},
+             "Necklace_Silver", "NecklaceLong_Silver", "Necklace_SilverCrucifix", "Earring_Stud_Silver",
+             "Earring_LoopLrg_Silver", "Earring_LoopMed_Silver", "SilverScrap", "SilverCoin"}
 }, {
     key = "eco_oro_oro",
     label = "Oro (2 por 1 billete)",
     entrega = 2,
     pago = 1,
-    items = {"Bracelet_BangleLeftGold", "Bracelet_BangleRightGold", "Bracelet_ChainLeftGold",
-             "Bracelet_ChainRightGold", "Necklace_Gold", "NecklaceLong_Gold", "Earring_Stud_Gold",
-             "Earring_LoopLrg_Gold", "Earring_LoopMed_Gold", "Ring_Right_RingFinger_Gold", "Ring_Left_RingFinger_Gold",
-             "Ring_Right_MiddleFinger_Gold", "Ring_Left_MiddleFinger_Gold", "GoldScrap", "Locket"}
+    items = {{"Bracelet_BangleLeftGold", "Bracelet_BangleRightGold", "Bracelet_ChainLeftGold",
+              "Bracelet_ChainRightGold"}, {"Ring_Right_RingFinger_Gold", "Ring_Left_RingFinger_Gold",
+                                           "Ring_Right_MiddleFinger_Gold", "Ring_Left_MiddleFinger_Gold"},
+             "Necklace_Gold", "NecklaceLong_Gold", "Earring_Stud_Gold", "Earring_LoopLrg_Gold", "Earring_LoopMed_Gold",
+             "GoldScrap", "Locket"}
 }, {
     key = "eco_oro_monedas",
     label = "Monedas de oro y relojes",
@@ -199,9 +204,13 @@ M.compro_oro = {{
     entrega = 1,
     pago = 2,
     items = {"Amethyst", "Ruby", "Sapphire", "Emerald", "Necklace_GoldRuby", "Necklace_SilverSapphire",
-             "Necklace_GoldDiamond", "Necklace_SilverDiamond", "Ring_Right_RingFinger_GoldDiamond",
-             "Ring_Left_RingFinger_GoldDiamond", "Ring_Right_RingFinger_SilverDiamond",
-             "Ring_Left_RingFinger_SilverDiamond", "Ring_Right_RingFinger_GoldRuby", "Ring_Left_RingFinger_GoldRuby"}
+             "Necklace_GoldDiamond", "Necklace_SilverDiamond",
+             {"Ring_Right_RingFinger_GoldDiamond", "Ring_Left_RingFinger_GoldDiamond",
+              "Ring_Right_MiddleFinger_GoldDiamond", "Ring_Left_MiddleFinger_GoldDiamond"},
+             {"Ring_Right_RingFinger_SilverDiamond", "Ring_Left_RingFinger_SilverDiamond",
+              "Ring_Right_MiddleFinger_SilverDiamond", "Ring_Left_MiddleFinger_SilverDiamond"},
+             {"Ring_Right_RingFinger_GoldRuby", "Ring_Left_RingFinger_GoldRuby", "Ring_Right_MiddleFinger_GoldRuby",
+              "Ring_Left_MiddleFinger_GoldRuby"}}
 }, {
     key = "eco_oro_lingote_chico",
     label = "Lingote chico",

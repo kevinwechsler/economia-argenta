@@ -191,12 +191,48 @@ k, a = precioDe("pool_eco_ferreteria", "NailsBox")
 ok("una caja de clavos cuesta 1 billete", a == 1, tostring(a))
 k, a = precioDe("pool_eco_ferreteria", "Hammer")
 ok("la ferreteria no vende herramientas", k == nil)
-local kind, amount, offer = precioDe("pool_eco_compro_oro", "Ring_Left_RingFinger_Silver")
+local kind, amount, offer = precioDe("pool_eco_compro_oro", "Ring_Right_RingFinger_Silver")
 ok("la plata se entrega de a 5", kind == "items" or kind == "self", tostring(kind))
 ok("cantidad a entregar de plata = 5", amount == 5, tostring(amount))
 local action = offer and offer.reward and offer.reward.actions and offer.reward.actions[1]
 ok("5 de plata pagan 1 billete", action and action.amount == 100, action and tostring(action.amount))
 ok("no hay almacen", runtime.shops["GoodPhoods"] == nil)
+
+print("-- compro oro sin repetidos --")
+local function contarNombre(pool, prefijo)
+    local n = 0
+    for _, o in pairs((runtime.pools[pool] or {}).offers or {}) do
+        if tostring(o.item):find(prefijo, 1, true) then
+            n = n + 1
+        end
+    end
+    return n
+end
+ok("anillo de oro aparece una sola vez", contarNombre("pool_eco_compro_oro", "Base.Ring_") ==
+    contarNombre("pool_eco_compro_oro", "Base.Ring_Right_RingFinger_"), contarNombre("pool_eco_compro_oro", "Base.Ring_"))
+ok("brazaletes: 2 filas (oro y plata)", contarNombre("pool_eco_compro_oro", "Base.Bracelet_") == 2,
+    contarNombre("pool_eco_compro_oro", "Base.Bracelet_"))
+local anilloOro
+for _, o in pairs(runtime.pools.pool_eco_compro_oro.offers) do
+    if o.item == "Base.Ring_Right_RingFinger_Gold" then
+        anilloOro = o
+    end
+end
+local subs = anilloOro and anilloOro.price and anilloOro.price.substitutes or {}
+local acepta = {}
+for _, s in ipairs(subs) do
+    acepta[s] = true
+end
+ok("el anillo de oro acepta las otras 3 variantes", #subs == 3 and acepta["Base.Ring_Left_RingFinger_Gold"] and
+    acepta["Base.Ring_Left_MiddleFinger_Gold"], #subs)
+ok("y se sigue entregando de a 2", anilloOro and anilloOro.price.amount == 2)
+local plataSuelta
+for _, o in pairs(runtime.pools.pool_eco_compro_oro.offers) do
+    if o.item == "Base.Necklace_Silver" then
+        plataSuelta = o
+    end
+end
+ok("un collar sin variantes no tiene sustitutos", plataSuelta and plataSuelta.price.substitutes == nil)
 
 print("-- precio cambiado por el admin --")
 -- Lo que guarda "Cambiar precio..." (precios_admin.lua) en PhunMart_Items.json
@@ -205,7 +241,7 @@ local rtAdmin = Core.compileWith({
         ["Base.Katana"] = {
             price = "eco_100"
         },
-        ["Base.Ring_Left_RingFinger_Silver"] = {
+        ["Base.Ring_Right_RingFinger_Silver"] = {
             reward = "eco_pago_3"
         }
     }
@@ -221,7 +257,7 @@ local kat = ofertaEn(rtAdmin, "pool_eco_armeria", "Base.Katana")
 ok("el admin sube la katana a 100", kat and kat.price.items[1].amount == 100, kat and kat.price.items[1].amount)
 local mach = ofertaEn(rtAdmin, "pool_eco_armeria", "Base.Machete")
 ok("el resto no cambia (machete 25)", mach and mach.price.items[1].amount == 25)
-local anillo = ofertaEn(rtAdmin, "pool_eco_compro_oro", "Base.Ring_Left_RingFinger_Silver")
+local anillo = ofertaEn(rtAdmin, "pool_eco_compro_oro", "Base.Ring_Right_RingFinger_Silver")
 local accion = anillo and anillo.reward and anillo.reward.actions and anillo.reward.actions[1]
 ok("el admin cambia el pago de la plata a 3", accion and accion.amount == 300, accion and accion.amount)
 ok("la plata se sigue entregando de a 5", anillo and anillo.price.amount == 5)

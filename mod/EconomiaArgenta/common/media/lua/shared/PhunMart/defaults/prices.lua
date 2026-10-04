@@ -63,4 +63,18 @@ for n = 1, 999 do
     }
 end
 
+-- Compro Oro: "entregar N" que acepta cualquier variante de la joya
+-- (anillo izquierdo o derecho, etc.). Una clave por fila con variantes.
+local CompraOro = require "PhunMart/defaults/compro_oro"
+for _, f in ipairs(CompraOro.filas()) do
+    if f.sustitutos then
+        prices[CompraOro.clavePrecio(f)] = {
+            kind = "self",
+            amount = f.entrega,
+            factor = 1,
+            substitutes = f.sustitutos
+        }
+    end
+end
+
 return prices

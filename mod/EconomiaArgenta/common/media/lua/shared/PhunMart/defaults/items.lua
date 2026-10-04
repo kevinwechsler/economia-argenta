@@ -20,4 +20,15 @@ for _, lista in ipairs({Catalogo.armeria, Catalogo.ferreteria}) do
     end
 end
 
+-- Compro Oro: las filas con variantes usan un precio propio que acepta
+-- cualquiera de ellas como pago (ver prices.lua y compro_oro.lua).
+local CompraOro = require "PhunMart/defaults/compro_oro"
+for _, f in ipairs(CompraOro.filas()) do
+    if f.sustitutos then
+        items[f.full] = {
+            price = CompraOro.clavePrecio(f)
+        }
+    end
+end
+
 return items

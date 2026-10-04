@@ -32,6 +32,8 @@ for _, lista in ipairs({Catalogo.armeria, Catalogo.ferreteria}) do
 end
 
 -- Compro Oro: el precio es entregar N del item y el premio son billetes.
+-- Solo se lista el primero de cada fila con variantes (compro_oro.lua).
+local CompraOro = require "PhunMart/defaults/compro_oro"
 for _, g in ipairs(Catalogo.compro_oro) do
     groups[g.key] = {
         label = g.label,
@@ -42,8 +44,11 @@ for _, g in ipairs(Catalogo.compro_oro) do
                 weight = 1.0
             }
         },
-        items = g.items
+        items = {}
     }
+end
+for _, f in ipairs(CompraOro.filas()) do
+    table.insert(groups[f.grupo].items, f.item)
 end
 
 return groups
