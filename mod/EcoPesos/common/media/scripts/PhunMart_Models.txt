@@ -1,0 +1,12 @@
+module PhunMart
+{
+
+	model PhunWallet
+	{
+		mesh = PhunWallet,
+		texture = WalletTexture,
+		scale = 0.015,
+	}
+
+
+}

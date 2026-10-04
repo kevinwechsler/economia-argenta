@@ -1,0 +1,828 @@
+if isServer() then
+    return
+end
+
+local Core = PhunMart
+local ListPanel = require "PhunMart_Client/ui/base/list_panel"
+local FormPanel = require "PhunMart_Client/ui/base/form_panel"
+local KeyPicker = require "PhunMart_Client/ui/base/key_picker"
+local DeleteHelper = require "PhunMart_Client/ui/base/delete_helper"
+local PendingRestock = require "PhunMart_Client/ui/admin/pending_restock"
+local tools = require "PhunMart_Client/ui/ui_utils"
+
+local PAD = ListPanel.PAD
+local ROW_H = ListPanel.ROW_H
+local FONT_SCALE = ListPanel.FONT_SCALE
+local FONT_HGT_SMALL = ListPanel.FONT_HGT_SMALL
+local FONT_HGT_MEDIUM = ListPanel.FONT_HGT_MEDIUM
+
+Core.ui.admin_pools = ListPanel:derive("PhunPoolsAdminUI")
+Core.ui.admin_pools.instances = {}
+local UI = Core.ui.admin_pools
+UI._defKind = "pools"
+
+--- What to print under a price dropdown. A key is a name somebody invented, so
+--- `currency_low` alone never answered the only question being asked, which is
+--- how much. Falls back to describing the field when nothing is chosen, since
+--- an empty hint under an empty dropdown says nothing at all.
+local function priceHintFor(key)
+    local text = tools.priceHint(key)
+    if text == "" then
+        return getText("IGUI_PhunMart_Hint_PoolDefaultPrice")
+    end
+    return text
+end
+
+-- Collect sorted keys from a table.
+local function getSortedKeys(tbl)
+    local keys = {}
+    for k in pairs(tbl) do
+        table.insert(keys, k)
+    end
+    table.sort(keys)
+    return keys
+end
+
+-- Format sources summary.
+-- Bare count under a column headed "Groups". It used to read "1 groups" under
+-- a column headed "Sources", which was both ungrammatical and repeated the same
+-- word down fifty rows to say nothing.
+local function formatSources(def)
+    if def.sources and def.sources.groups and #def.sources.groups > 0 then
+        return tostring(#def.sources.groups)
+    end
+    return ""
+end
+
+-- Format zones summary.
+local function formatZones(def)
+    if def.zones and def.zones.difficulty then
+        local nums = {}
+        for _, d in ipairs(def.zones.difficulty) do
+            table.insert(nums, tostring(d))
+        end
+        return table.concat(nums, ",")
+    end
+    return ""
+end
+
+local MONTH_ABBREV = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+
+-- Format months summary. Names rather than numbers: "12" in a narrow column is
+-- indistinguishable from a zone difficulty or a count, where "Dec" can only be
+-- one thing.
+--
+-- Capped at three, matching formatKeyList below, because this is the last
+-- column and a full twelve would clip mid-word against the panel edge. A
+-- seasonal pool is one to three months in practice; the "+N" is for the pool
+-- somebody has restricted to most of the year, where the exact list matters
+-- less than the fact that it is restricted at all.
+local function formatMonths(def)
+    local list = Core.utils.monthsToList(Core.utils.parseMonths(def.months))
+    if not list then
+        return ""
+    end
+    local show = math.min(#list, 3)
+    local names = {}
+    for i = 1, show do
+        table.insert(names, MONTH_ABBREV[list[i]])
+    end
+    local text = table.concat(names, ",")
+    if #list > show then
+        text = text .. " +" .. tostring(#list - show)
+    end
+    return text
+end
+
+-- Parse a comma-separated string of numbers into an integer array. Returns nil for empty input.
+local function parseCSVNumbers(text)
+    if not text or text == "" then
+        return nil
+    end
+    local result = {}
+    for s in text:gmatch("[^,]+") do
+        s = s:match("^%s*(.-)%s*$")
+        local n = tonumber(s)
+        if n then
+            table.insert(result, math.floor(n))
+        end
+    end
+    if #result == 0 then
+        return nil
+    end
+    return result
+end
+
+---------------------------------------------------------------------------
+-- Edit / Add Modal (FormPanel-based)
+---------------------------------------------------------------------------
+
+-- Format a key list as "key1, key2, key3 +X more" or "(none)".
+local function formatKeyList(keys, limit)
+    limit = limit or 3
+    if not keys or #keys == 0 then
+        return getText("IGUI_PhunMart_Lbl_None")
+    end
+    local show = math.min(#keys, limit)
+    local parts = {}
+    for i = 1, show do
+        table.insert(parts, keys[i])
+    end
+    local text = table.concat(parts, ", ")
+    if #keys > limit then
+        text = text .. " +" .. tostring(#keys - limit) .. " more"
+    end
+    return text
+end
+
+-- Collect sorted price keys for combo. The leading blank is the "no default
+-- price" option, and lets an existing one be cleared.
+local function getPriceKeys()
+    local prices = Core.defs and Core.defs.prices or require "PhunMart/defaults/prices"
+    local keys = {}
+    for k, v in pairs(prices) do
+        if not v.template then
+            table.insert(keys, k)
+        end
+    end
+    table.sort(keys)
+    table.insert(keys, 1, "")
+    return keys
+end
+
+-- Resolve a blacklist entry's display name. Entries may be item IDs or special
+-- keys, so fall back to the raw key when the script manager doesn't know it.
+local function resolveEntryName(key)
+    local si = getScriptManager():getItem(key)
+    return si and si:getDisplayName() or key
+end
+
+-- Options for the pool blacklist picker: everything currently blacklisted, plus
+-- everything the pool can currently offer. Seeding with the existing entries
+-- matters: a blacklisted item is compiled out of pool.offers entirely, so
+-- without this the picker couldn't represent it and unticking would be the only
+-- way to lose it.
+local function getBlacklistOptions(poolKey, current)
+    local seen, opts = {}, {}
+    local function add(key)
+        if key and key ~= "" and not seen[key] then
+            seen[key] = true
+            table.insert(opts, {
+                key = key,
+                display = resolveEntryName(key)
+            })
+        end
+    end
+    for _, k in ipairs(current or {}) do
+        add(k)
+    end
+    local pool = poolKey and Core.runtime and Core.runtime.pools and Core.runtime.pools[poolKey]
+    for _, offer in pairs(pool and pool.offers or {}) do
+        add(offer.item)
+    end
+    table.sort(opts, function(a, b)
+        return a.display:lower() < b.display:lower()
+    end)
+    return opts
+end
+
+-- Format the blacklist picker's summary line using display names.
+local function formatBlacklistDisplay(keys)
+    if not keys or #keys == 0 then
+        return getText("IGUI_PhunMart_Lbl_None")
+    end
+    local limit = math.min(#keys, 3)
+    local names = {}
+    for i = 1, limit do
+        names[i] = resolveEntryName(keys[i])
+    end
+    local text = table.concat(names, ", ")
+    if #keys > limit then
+        text = text .. " +" .. tostring(#keys - limit) .. " more"
+    end
+    return text
+end
+
+-- Reject anything in the zones field that isn't a plain number.
+local function validateZones(value)
+    if not value or value == "" then
+        return nil
+    end
+    for s in value:gmatch("[^,]+") do
+        if not tonumber(s:match("^%s*(.-)%s*$")) then
+            return getText("IGUI_PhunMart_Err_Numeric")
+        end
+    end
+    return nil
+end
+
+-- Reject anything in the months field that isn't a whole number from 1 to 12.
+-- Stricter than the zones field on purpose: a difficulty tier is open-ended and
+-- depends on whatever PhunZones is configured with, where the calendar is not,
+-- so "13" here is always a mistake and is worth catching before it is saved.
+local function validateMonths(value)
+    if not value or value == "" then
+        return nil
+    end
+    for s in value:gmatch("[^,]+") do
+        local n = tonumber(s:match("^%s*(.-)%s*$"))
+        if not n or n ~= math.floor(n) or n < 1 or n > 12 then
+            return getText("IGUI_PhunMart_Err_Months")
+        end
+    end
+    return nil
+end
+
+local function createEditModal(poolKey, poolDef, isNew, cb)
+    local def = poolDef or {}
+    local allPools = Core.defs and Core.defs.pools or require "PhunMart/defaults/pools"
+
+    local monthsDefault = ""
+    local monthsList = Core.utils.monthsToList(Core.utils.parseMonths(def.months))
+    if monthsList then
+        local nums = {}
+        for _, m in ipairs(monthsList) do
+            table.insert(nums, tostring(m))
+        end
+        monthsDefault = table.concat(nums, ", ")
+    end
+
+    local zonesDefault = ""
+    if def.zones and def.zones.difficulty then
+        local nums = {}
+        for _, d in ipairs(def.zones.difficulty) do
+            table.insert(nums, tostring(d))
+        end
+        zonesDefault = table.concat(nums, ", ")
+    end
+
+    -- Copy arrays for picker mutations
+    local selectedGroups = {}
+    if def.sources and def.sources.groups then
+        for _, g in ipairs(def.sources.groups) do table.insert(selectedGroups, g) end
+    end
+    local selectedBlacklist = {}
+    if def.blacklist then
+        for _, b in ipairs(def.blacklist) do table.insert(selectedBlacklist, b) end
+    end
+
+    -- Collect available group keys for picker
+    local groups = Core.defs and Core.defs.groups or require "PhunMart/defaults/groups"
+    local groupOptions = getSortedKeys(groups)
+
+    -- Price combo options
+    local priceKeys = getPriceKeys()
+    local currentPrice = def.defaults and def.defaults.price or ""
+
+    -- The special every offer in this pool hands over, unless something further
+    -- down the chain names its own. `pool_prawnstars_core` is the shipped
+    -- example: a whole shelf that pays out change rather than giving an item.
+    local specials = Core.defs and Core.defs.specials or require "PhunMart/defaults/specials"
+    local specialKeys = getSortedKeys(specials)
+    local selectedSpecial = def.defaults and def.defaults.reward or nil
+
+    -- The picker edits the `all` list, every key of which must pass. Any `any`
+    -- or `notAny` buckets a hand-written entry carries ride along untouched.
+    local selectedConditions, conditionExtras = tools.splitConditions(def.defaults and def.defaults.conditions)
+
+    local defaultsStock = def.defaults and def.defaults.offer and def.defaults.offer.stock
+    local stockMinDefault = (defaultsStock and defaultsStock.min ~= nil) and tostring(defaultsStock.min) or ""
+    local stockMaxDefault = (defaultsStock and defaultsStock.max ~= nil) and tostring(defaultsStock.max) or ""
+
+    local titleText = isNew and getText("IGUI_PhunMart_Title_AddPool") or getText("IGUI_PhunMart_Title_EditX", poolKey or "")
+
+    local form = FormPanel:new({
+        width = math.floor(520 * FONT_SCALE),
+        title = titleText,
+        -- Only offered on an existing entry; there is nothing to remove on an
+        -- Add form. The list refreshes itself once the recompile lands.
+        onDelete = (not isNew) and function(f)
+            DeleteHelper.confirm("pools", poolKey, function()
+                if not f._removed then
+                    f._removed = true
+                    f:close()
+                end
+            end)
+        end or nil,
+        -- The pool viewer, from inside the pool. It was on the list behind a
+        -- View button, which means leaving the thing you are editing to find out
+        -- what it currently yields. Existing pools only: a new one has drawn
+        -- nothing yet and the runtime has never heard of it.
+        extraButton = (not isNew) and {
+            text = getText("IGUI_PhunMart_Btn_ViewContents"),
+            -- Through the server, the same way the in-shop pool menu asks.
+            -- Reading the runtime here instead meant two faults: a disabled pool
+            -- is not in the runtime, so the button silently did nothing, and the
+            -- raw runtime pool carries no blacklist, so what did open drew every
+            -- blacklisted row as though it were live stock.
+            onClick = function(f)
+                sendClientCommand(Core.name, Core.commands.requestPool, {
+                    poolKey = poolKey
+                })
+            end
+        } or nil,
+        onApply = function(f)
+            local key = f:getFieldValue("key")
+
+            -- Start from the existing definition so keys this form doesn't model
+            -- survive the edit. Pool blacklists, written by the in-shop menu,
+            -- are the ones that bite. diffTable drops anything unchanged
+            -- before it reaches the override file, and emits a tombstone for
+            -- anything we clear below.
+            local result = Core.utils.deepCopy(def)
+
+            -- Sources (groups only)
+            result.sources = #selectedGroups > 0 and {groups = selectedGroups} or nil
+
+            -- Emptying the blacklist relies on the tombstone: nil here makes
+            -- diffTable unset the key, which is what restores a pool that was
+            -- blacklisted from the in-shop menu.
+            result.blacklist = #selectedBlacklist > 0 and selectedBlacklist or nil
+
+            -- Defaults price (optional)
+            local priceVal = f:getFieldValue("defaultsPrice")
+            if priceVal and priceVal ~= "" then
+                result.defaults = result.defaults or {}
+                result.defaults.price = priceVal
+            elseif result.defaults then
+                result.defaults.price = nil
+            end
+
+            -- Same shape as the price above it. Clearing relies on the
+            -- tombstone: nil unsets the key and the pool goes back to handing
+            -- over whatever each offer names for itself.
+            if selectedSpecial and selectedSpecial ~= "" then
+                result.defaults = result.defaults or {}
+                result.defaults.reward = selectedSpecial
+            elseif result.defaults then
+                result.defaults.reward = nil
+            end
+
+            -- Same shape again. joinConditions returns nil for an emptied
+            -- picker, which tombstones the key.
+            local conditionsOut = tools.joinConditions(selectedConditions, conditionExtras)
+            if conditionsOut then
+                result.defaults = result.defaults or {}
+                result.defaults.conditions = conditionsOut
+            elseif result.defaults then
+                result.defaults.conditions = nil
+            end
+
+            -- Defaults stock (optional). The compiler merges the whole of
+            -- poolDef.defaults into every offer this pool builds, so stock has
+            -- always worked here; the form simply never offered it, leaving
+            -- pools the one layer in the chain that could set a price but not
+            -- an amount. Either bound alone is valid, same as the item and
+            -- special editors.
+            --
+            -- The table is edited rather than rebuilt, because it can carry a
+            -- restockHours the form does not show: the per-offer refill timer
+            -- the runtime reads. Rebuilding it from the two boxes dropped it.
+            local stockMin, stockMax = f:getFieldRange("defaultsStock")
+            if stockMin or stockMax then
+                result.defaults = result.defaults or {}
+                result.defaults.offer = result.defaults.offer or {}
+                local stock = result.defaults.offer.stock or {}
+                stock.min = stockMin and math.floor(stockMin) or nil
+                stock.max = stockMax and math.floor(stockMax) or nil
+                result.defaults.offer.stock = stock
+            elseif result.defaults and result.defaults.offer then
+                -- Unlimited, so the timer goes with it.
+                result.defaults.offer.stock = nil
+            end
+
+            -- Zones (optional)
+            local zones = parseCSVNumbers(f:getFieldValue("zones"))
+            result.zones = zones and {difficulty = zones} or nil
+
+            -- Months (optional). Stored as a sorted array to match zones, and
+            -- because a set would round-trip through JSON as string keys.
+            -- Clearing it relies on the tombstone, same as zones: nil unsets
+            -- the key and the pool goes back to selling year round.
+            result.months = Core.utils.monthsToList(Core.utils.parseMonths(f:getFieldValue("months")))
+
+            -- Fallback texture / category (optional)
+            local fbTex = f:getFieldValue("fallbackTexture")
+            result.fallbackTexture = (fbTex ~= "") and fbTex or nil
+
+            local fbCat = f:getFieldValue("fallbackCategory")
+            result.fallbackCategory = (fbCat ~= "") and fbCat or nil
+
+            result.sticky = f:getFieldValue("sticky") and true or nil
+
+            -- Only written when disabled; absent already means enabled.
+            -- Clearing the key tombstones it, so re-enabling still carries.
+            -- Spelled out rather than `x and nil or false`: that idiom cannot
+            -- yield nil, so it returned false for both answers and every save
+            -- disabled whatever it was saving.
+            if f:getFieldValue("enabled") then
+                result.enabled = nil
+            else
+                result.enabled = false
+            end
+
+            -- Cleared rather than stored empty, so an unnamed definition does
+            -- not carry the key at all and falls back to showing its key.
+            local title = f:getFieldValue("title")
+            result.title = (title ~= "") and title or nil
+
+            if cb then cb(key, result) end
+            f:close()
+        end,
+    })
+
+    -- Identity above the tabs, key first.
+    --
+    -- This was the other way round, on the argument that the name is what the
+    -- lists show and what you think in, so leading with the key put the least
+    -- editable thing first. What that missed is that the key is the required
+    -- field and the name is an optional override of it, and a form that asks
+    -- for the optional half first reads as though the required half is
+    -- optional too. Filling in Name and being told Key is missing is the
+    -- specific confusion this order avoids.
+    form:addTextField("key", getText("IGUI_PhunMart_Lbl_Key"), {
+        default = poolKey or "", editable = isNew,
+        required = true,
+        hint = getText(isNew and "IGUI_PhunMart_Hint_Key" or "IGUI_PhunMart_Hint_KeyFixed"),
+        validate = isNew and function(value)
+            if allPools[value] then
+                return getText("IGUI_PhunMart_Err_KeyInUse")
+            end
+        end or nil,
+    })
+    form:addTextField("title", getText("IGUI_PhunMart_Lbl_Title"), {
+        default = def.title or "",
+        hint = getText("IGUI_PhunMart_Hint_Title"),
+    })
+
+    -- What the pool draws from, which is the whole of what a pool is for.
+    form:addPickerField("groups", getText("IGUI_PhunMart_Lbl_Groups"), {
+        value = selectedGroups, display = formatKeyList(selectedGroups),
+        hint = getText("IGUI_PhunMart_Hint_PoolGroups"),
+        section = "p_basics",
+        onPick = function(f, field)
+            KeyPicker.open(getSpecificPlayer(0), groupOptions, selectedGroups, function(keys)
+                selectedGroups = keys or {}
+                f:setPickerValue("groups", selectedGroups, formatKeyList(selectedGroups))
+            end, { title = getText("IGUI_PhunMart_Admin_PickGroups") })
+        end,
+    })
+    -- What the pool will not draw, next to what it draws from.
+    form:addPickerField("blacklist", getText("IGUI_PhunMart_Lbl_BlacklistItems"), {
+        value = selectedBlacklist,
+        display = formatBlacklistDisplay(selectedBlacklist),
+        hint = getText("IGUI_PhunMart_Hint_PoolBlacklist"),
+        section = "p_basics",
+        onPick = function(f, field)
+            KeyPicker.open(getSpecificPlayer(0), getBlacklistOptions(poolKey, selectedBlacklist), selectedBlacklist,
+                function(keys)
+                    selectedBlacklist = keys or {}
+                    f:setPickerValue("blacklist", selectedBlacklist, formatBlacklistDisplay(selectedBlacklist))
+                end, {
+                    title = getText("IGUI_PhunMart_Admin_PickBlacklist")
+                })
+        end,
+    })
+    form:addCheckField("enabled", getText("IGUI_PhunMart_Lbl_Enabled_Checkbox"), {
+        checked = def.enabled ~= false,
+        hint = getText("IGUI_PhunMart_Hint_PoolEnabled"),
+        section = "p_basics",
+    })
+
+    -- A price only used where an item names none, a difficulty gate that needs
+    -- PhunZones to mean anything, and a shelf that never rolls: real settings,
+    -- none of them the reason you opened a pool. Two shipped pools are sticky
+    -- and no admin has ever needed to make a third.
+    form:addComboField("defaultsPrice", getText("IGUI_PhunMart_Lbl_DefaultPrice"), {
+        options = priceKeys, selected = currentPrice,
+        hint = priceHintFor(currentPrice),
+        section = "p_more",
+        -- Reads the combo at click time so it follows a price just picked,
+        -- matching how Inherits and the specials price field behave.
+        button = {
+            text = getText("IGUI_PhunMart_Btn_OpenParent"),
+            onClick = function(f)
+                local key = f:getFieldValue("defaultsPrice")
+                if key and key ~= "" then
+                    Core.ui.admin_prices.OnEditPrice(getSpecificPlayer(0), key)
+                end
+            end
+        },
+        onChange = function(f)
+            f:setHintText("defaultsPrice", priceHintFor(f:getFieldValue("defaultsPrice")))
+        end,
+    })
+    -- Directly under the price, because the two are one question asked twice:
+    -- what an offer here costs, and what it hands over. The pool is the weakest
+    -- layer of the chain, so a group or an item override still wins.
+    form:addPickerField("special", getText("IGUI_PhunMart_Lbl_Grants"), {
+        value = selectedSpecial,
+        display = selectedSpecial or getText("IGUI_PhunMart_Lbl_None"),
+        hint = getText("IGUI_PhunMart_Hint_PoolGrants"),
+        section = "p_more",
+        onPick = function(f, field)
+            local initial = selectedSpecial and {selectedSpecial} or {}
+            KeyPicker.open(getSpecificPlayer(0), specialKeys, initial, function(key)
+                selectedSpecial = key
+                f:setPickerValue("special", selectedSpecial, selectedSpecial or getText("IGUI_PhunMart_Lbl_None"))
+            end, {
+                title = getText("IGUI_PhunMart_Admin_PickSpecials"),
+                singleSelect = true
+            })
+        end,
+    })
+    -- Under the price and reward, completing the same sentence: what an offer
+    -- here costs, what it hands over, and who may buy it. Conditions are the
+    -- one part that does not follow the most-specific-wins rule: every layer's
+    -- are combined and all of them must pass, so these add to what a group or
+    -- an item already asks for.
+    form:addPickerField("conditions", getText("IGUI_PhunMart_Lbl_Conditions"), {
+        value = selectedConditions,
+        display = tools.formatConditionList(selectedConditions),
+        hint = getText("IGUI_PhunMart_Hint_ConditionsLayered"),
+        section = "p_more",
+        onPick = function(f, field)
+            KeyPicker.open(getSpecificPlayer(0), tools.conditionOptions(), selectedConditions, function(keys)
+                selectedConditions = keys or {}
+                f:setPickerValue("conditions", selectedConditions, tools.formatConditionList(selectedConditions))
+            end, {
+                title = getText("IGUI_PhunMart_Admin_PickConditions")
+            })
+        end,
+    })
+    -- Beside the fallback price and reward, because it is the same idea: what
+    -- this pool hands an offer that names nothing of its own.
+    form:addRangeField("defaultsStock", getText("IGUI_PhunMart_Lbl_Stock"), {
+        minDefault = stockMinDefault,
+        maxDefault = stockMaxDefault,
+        hint = getText("IGUI_PhunMart_Hint_UnlimitedStock"),
+        integer = true,
+        min = 0,
+        section = "p_more",
+    })
+    -- Directly under stock, because it is a statement about stock: a sticky
+    -- pool's offers are all present every restock with no limit on them, which
+    -- is the setting the range above would otherwise be describing. It used to
+    -- sit below the zone and month gates, three fields away from the one it
+    -- qualifies.
+    form:addCheckField("sticky", getText("IGUI_PhunMart_Lbl_Sticky"), {
+        checked = def.sticky == true,
+        text = getText("IGUI_PhunMart_Lbl_Sticky"),
+        hint = getText("IGUI_PhunMart_Hint_Sticky"),
+        section = "p_more",
+    })
+    form:addTextField("zones", getText("IGUI_PhunMart_Lbl_Zones"), {
+        default = zonesDefault,
+        hint = getText("IGUI_PhunMart_Hint_Zones"),
+        validate = validateZones,
+        section = "p_more",
+    })
+    -- Under zones, because it is the other half of the same idea: one gate on
+    -- where a pool sells, one on when.
+    form:addTextField("months", getText("IGUI_PhunMart_Lbl_Months"), {
+        default = monthsDefault,
+        hint = getText("IGUI_PhunMart_Hint_Months"),
+        validate = validateMonths,
+        section = "p_more",
+    })
+    -- Last resorts, below the group's own. No shipped pool sets either, and a
+    -- pool only reaches for them when the group has nothing to offer.
+    form:addTextField("fallbackTexture", getText("IGUI_PhunMart_Lbl_DefaultTexture"), {
+        default = def.fallbackTexture or "",
+        hint = getText("IGUI_PhunMart_Hint_DefaultTexture"),
+        section = "p_more",
+    })
+    form:addTextField("fallbackCategory", getText("IGUI_PhunMart_Lbl_DefaultCategory"), {
+        default = def.fallbackCategory or "",
+        hint = getText("IGUI_PhunMart_Hint_DefaultCategory"),
+        section = "p_more",
+    })
+
+    form:setSections({{
+        section = "p_basics",
+        label = getText("IGUI_PhunMart_Sec_Basics")
+    }, {
+        section = "p_more",
+        label = getText("IGUI_PhunMart_Sec_Advanced")
+    }})
+
+    form:initialise()
+    form:addToUIManager()
+    form:bringToTop()
+    return form
+end
+
+---------------------------------------------------------------------------
+-- Main Pools Panel
+---------------------------------------------------------------------------
+
+local function savePoolDef(key, def)
+    sendClientCommand(Core.name, Core.commands.upsertPoolDef, {key = key, def = def})
+    PendingRestock.note("pools", key)
+    if not Core.isLocal and Core.defs and Core.defs.pools then
+        Core.defs.pools[key] = def
+    end
+end
+
+--- Build this panel as a view for the tabbed shell. The shell owns the size
+--- and position, so both are placeholders until its first layout pass.
+function UI.createTab(player)
+    local playerIndex = player:getPlayerNum()
+    local instance = UI.instances[playerIndex]
+    if not instance then
+        instance = UI:new(0, 0, 100, 100, player)
+        instance.description = getText("IGUI_PhunMart_Desc_PoolDefs")
+        instance:initialise()
+        UI.instances[playerIndex] = instance
+    end
+    return instance
+end
+
+function UI:createChildren()
+    ListPanel.createChildren(self)
+
+    self:addNameColumn(function(d)
+        if not d.enabled then
+            return 0.5, 0.5, 0.5
+        elseif d.sticky then
+            return 0.9, 0.85, 0.3
+        end
+    end)
+    self:addListColumn(getText("IGUI_PhunMart_Col_Groups"), 0.46, {field = "sources"})
+    -- Blank rather than 0 when there is no blacklist. Most pools have none, and
+    -- a column of zeros reads as data when it is really the absence of it.
+    self:addListColumn(getText("IGUI_PhunMart_Col_Blacklisted"), 0.60, {
+        field = "blacklist",
+        color = {0.9, 0.5, 0.5}
+    })
+    self:addListColumn(getText("IGUI_PhunMart_Col_Zones"), 0.74, {field = "zones", color = {0.7, 0.9, 0.7}})
+    self:addListColumn(getText("IGUI_PhunMart_Col_Months"), 0.86, {field = "months", color = {0.7, 0.8, 0.95}})
+
+    self.list.doDrawItem = ListPanel.defaultDrawRow
+
+    -- Double-click to edit
+    self.list:setOnMouseDoubleClick(self, self.GridDoubleClick)
+
+    -- Bottom buttons: New, Edit (requires selection), View (requires selection)
+    self:addBottomButton(getText("IGUI_PhunMart_Btn_New"), UI.onAddClick, false)
+    self:addBottomButton(getText("IGUI_PhunMart_Btn_Edit"), UI.onEditClick, true)
+    self:addBottomButton(getText("IGUI_PhunMart_Btn_View"), UI.onViewClick, true)
+    self:addBottomButton(getText("IGUI_PhunMart_Btn_Duplicate"), UI.onDuplicateClick, true)
+    self:addBottomButton(getText("IGUI_PhunMart_Btn_Delete"), UI.onDeleteClick, true)
+end
+
+function UI:getFilterText(itemData)
+    -- Both, so a filter matches whichever of the two the admin thinks in.
+    -- Months are searchable by name, since the column shows "Dec" and typing
+    -- what you can see should find it.
+    local text = (itemData.key or "") .. " " .. (itemData.title or "") .. " " .. (itemData.sources or "") .. " " ..
+                     (itemData.months or "")
+    if itemData.sticky then
+        text = text .. " sticky"
+    end
+    if itemData.blacklist ~= "" then
+        text = text .. " blacklist"
+    end
+    return text
+end
+
+function UI:refreshPools()
+    self:clearList()
+
+    local pools = Core.defs and Core.defs.pools or require "PhunMart/defaults/pools"
+
+    local keys = {}
+    for k in pairs(pools) do
+        table.insert(keys, k)
+    end
+    self:sortKeysByName(keys, pools)
+
+    for _, key in ipairs(keys) do
+        local def = pools[key]
+        local markers = {}
+        if def.sticky then table.insert(markers, "[S]") end
+        if def.enabled == false then table.insert(markers, "[off]") end
+        local name, title = self:rowName(key, def, markers)
+        self:addListItem(name, {
+            key = key,
+            name = name,
+            title = title,
+            sticky = def.sticky == true,
+            enabled = def.enabled ~= false,
+            sources = formatSources(def),
+            blacklist = def.blacklist and #def.blacklist > 0 and tostring(#def.blacklist) or "",
+            zones = formatZones(def),
+            months = formatMonths(def),
+            def = def
+        })
+    end
+end
+
+function UI:onAddClick()
+    createEditModal(nil, nil, true, function(key, def)
+        savePoolDef(key, def)
+        self:refreshPools()
+    end)
+end
+
+--- Open a copy of the selected pool as a new entry. See the groups editor for
+--- what this is for; a pool carries zone and month gates that are tedious to
+--- retype and easy to get subtly wrong.
+function UI:onDuplicateClick()
+    local data = self:selectedRow()
+    if not data then
+        return
+    end
+    local pools = Core.defs and Core.defs.pools or require "PhunMart/defaults/pools"
+    local copy = Core.utils.deepCopy(data.def)
+    if copy.title and copy.title ~= "" then
+        copy.title = getText("IGUI_PhunMart_CopyOfX", copy.title)
+    end
+    createEditModal(self:copyKeyFor(data.key, pools), copy, true, function(key, def)
+        savePoolDef(key, def)
+        self:refreshPools()
+    end)
+end
+
+function UI:onViewClick()
+    local data = self:selectedRow()
+    if not data then
+        return
+    end
+    -- Through the server, like every other way into the viewer. This read the
+    -- runtime directly, which meant the button did nothing at all for a
+    -- disabled pool and drew blacklisted rows as live stock for the rest.
+    sendClientCommand(Core.name, Core.commands.requestPool, {
+        poolKey = data.key
+    })
+end
+
+function UI:onEditClick()
+    if not self.list.selected or self.list.selected == 0 then
+        return
+    end
+    local selectedItem = self.list.items[self.list.selected]
+    if not selectedItem then
+        return
+    end
+    local data = selectedItem.item
+    createEditModal(data.key, data.def, false, function(key, def)
+        savePoolDef(key, def)
+        self:refreshPools()
+    end)
+end
+
+function UI:onDeleteClick()
+    if not self.list.selected or self.list.selected == 0 then
+        return
+    end
+    local selectedItem = self.list.items[self.list.selected]
+    if not selectedItem then
+        return
+    end
+    DeleteHelper.confirm("pools", selectedItem.item.key, function()
+        self:refreshPools()
+    end)
+end
+
+function UI:GridDoubleClick(item)
+    local data = item
+    createEditModal(data.key, data.def, false, function(key, def)
+        savePoolDef(key, def)
+        self:refreshPools()
+    end)
+end
+
+-- Open the edit modal directly for a specific pool key (used by shop_main context menu).
+-- Pass nil poolKey to open in "Add" mode.
+--- @param onSaved optional function(key, isNew), for a caller that has somewhere
+---        to put the pool once it exists. Creating one from inside a shop is the
+---        case that needs it: the pool was made to be sold there, and leaving it
+---        unattached means the admin has to go and add it a second time.
+function UI.OnEditPool(player, poolKey, onSaved)
+    local poolDef = nil
+    local isNew = true
+    if poolKey then
+        local pools = Core.defs and Core.defs.pools or require "PhunMart/defaults/pools"
+        poolDef = pools[poolKey]
+        if not poolDef then
+            return
+        end
+        isNew = false
+    end
+    createEditModal(poolKey, poolDef, isNew, function(key, def)
+        savePoolDef(key, def)
+        -- Refresh an open Pools list, matching what OnEditGroup / OnEditItem do;
+        -- without this an edit made from the in-shop menu leaves the list stale.
+        local inst = UI.instances[player:getPlayerNum()]
+        if inst and inst:isLive() then
+            inst:refreshPools()
+        end
+        Core.debugLn("[PhunMart] Pool " .. (isNew and "added" or "updated") .. ": " .. key)
+        if onSaved then
+            onSaved(key, isNew)
+        end
+    end)
+end
+
+UI.refresh = UI.refreshPools

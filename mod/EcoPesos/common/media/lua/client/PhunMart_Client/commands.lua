@@ -1,0 +1,316 @@
+if isServer() then
+    return
+end
+
+local Core = PhunMart
+local Toast = require "PhunMart_Client/ui/toast"
+
+local Commands = {}
+
+-- itemId (string) → { vehicleScript, condition }, populated by the spawnVehicle command
+Core._vehicleKeys = Core._vehicleKeys or {}
+-- itemId (string) → { animalType, animalBreed, animalSize }, populated by the spawnAnimal command
+Core._animalTokens = Core._animalTokens or {}
+
+Commands[Core.commands.updateWallet] = function(args)
+    local player = Core.utils.getPlayerByUsername(args.username)
+    for k, v in pairs(args.wallet) do
+        Core.wallet:adjust(player, k, v)
+    end
+end
+
+Commands[Core.commands.getWallet] = function(args)
+    Core.wallet:setPlayerData(args.username, args.wallet)
+end
+
+Commands[Core.commands.openError] = function(args)
+    -- Signal the open_shop timed action (if still waiting) to abort early.
+    if args.key then
+        Core.pendingShopData = Core.pendingShopData or {}
+        Core.pendingShopData[args.key] = {
+            error = args.message
+        }
+    end
+    local rawMsg = args.message or "Error"
+    local message = getTextOrNull("IGUI_PhunMart.Error." .. rawMsg) or rawMsg
+    local w = 300
+    local h = 150
+    local modal = ISModalDialog:new(getCore():getScreenWidth() / 2 - w / 2, getCore():getScreenHeight() / 2 - h / 2, w,
+        h, message, false, nil, nil, nil)
+    modal:initialise()
+    modal:addToUIManager()
+end
+
+Commands[Core.commands.serverPurchaseFailed] = function(arguments)
+    local player = getSpecificPlayer(arguments.playerIndex)
+    local name = player:getUsername()
+    local w = 300
+    local h = 150
+    local message = getTextOrNull("IGUI_PhunMart.Error." .. arguments.message) or arguments.message
+    local modal = ISModalDialog:new(getCore():getScreenWidth() / 2 - w / 2, getCore():getScreenHeight() / 2 - h / 2, w,
+        h, message, false, nil, nil, nil);
+    modal:initialise()
+    modal:addToUIManager()
+
+end
+
+Commands[Core.commands.updateHistory] = function(arguments)
+    local player = getSpecificPlayer(arguments.playerIndex)
+    Core.players[player:getUsername()] = arguments.history
+end
+
+Commands[Core.commands.buy] = function(arguments)
+    -- Update local wallet copy so balance display stays current
+    if arguments.wallet and arguments.wallet.current then
+        local username = getSpecificPlayer(arguments.playerIndex or 0)
+        if username then
+            Core.wallet:setPlayerData(username:getUsername(), arguments.wallet)
+        end
+    end
+    -- Item-based currency is removed server-side; sendRemoveItemFromContainer
+    -- already synced the inventory before this confirmation arrives.
+    -- Fire event so the open shop window can update stock and buy button
+    triggerEvent(Core.events.OnPurchaseComplete, arguments)
+end
+
+Commands[Core.commands.payWithInventory] = function(arguments)
+    local player = getSpecificPlayer(arguments.playerIndex)
+    for _, v in ipairs(arguments.items) do
+        local item = getScriptManager():getItem(v.name)
+        for i = 1, v.value do
+            local inv = player:getInventory()
+            local target = inv:getItemFromTypeRecurse(v.name)
+            local container = target:getContainer()
+            container:Remove(target)
+            sendRemoveItemFromContainer(container, target)
+        end
+    end
+    ISInventoryPage.dirtyUI()
+end
+
+Commands[Core.commands.onShopChange] = function(args)
+    triggerEvent(Core.events.OnShopChange, args.key, args.data, args.replaced == true)
+end
+
+-- The IsMoveAble value each shop sprite shipped with, captured before we first
+-- touch it, so a shop that becomes moveable gets back exactly what its tile
+-- had. false means the tile was never moveable and is left alone.
+local originalMoveable = {}
+
+-- Hides the Pick Up option on machines players may not move. Sprite properties
+-- are shared by every machine wearing that sprite, which is fine because a
+-- sprite belongs to one shop. The rule itself is enforced in nodestroy.lua;
+-- this only keeps the menu honest. Re-run whenever defs change, since a shop
+-- can be switched either way while the game is running.
+local function ConfigTiles()
+    local admin = Core.utils.isAdmin(getSpecificPlayer(0))
+    for tileName, shopKey in pairs(Core.spriteToShop) do
+        local tile = IsoSpriteManager.instance:getSprite(tileName)
+        local props = tile and tile:getProperties()
+        if props then
+            if originalMoveable[tileName] == nil then
+                originalMoveable[tileName] = props:has("IsMoveAble") and (props:get("IsMoveAble") or "") or false
+            end
+            local original = originalMoveable[tileName]
+            if original and (admin or Core.isShopMoveable(shopKey)) then
+                props:set("IsMoveAble", original)
+            elseif original then
+                props:unset("IsMoveAble")
+            end
+        end
+    end
+end
+
+Events[Core.events.OnDefsUpdated].Add(ConfigTiles)
+
+Commands[Core.commands.syncPurchases] = function(arguments)
+    Core.debug("syncPurchases", arguments)
+
+    Core.purchases.histories = Core.purchases.histories or {}
+    Core.purchases.histories[arguments.username] = arguments.history
+    ConfigTiles()
+end
+
+Commands[Core.commands.requestShop] = function(arguments)
+    -- Store data for the open_shop timed action to pick up.
+    -- The action polls Core.pendingShopData[key] in its update() loop and
+    -- opens the UI once both the animation has finished and this data exists.
+    Core.pendingShopData = Core.pendingShopData or {}
+    Core.pendingShopData[arguments.key] = arguments.data
+end
+
+Commands[Core.commands.getShopList] = function(args)
+    -- Shop list is now built from Core.runtime.shops compiled locally.
+    -- This handler is kept for compatibility but the round-trip is no longer initiated.
+    local player = Core.utils.getPlayerByUsername(args.username)
+    if player then
+        Core.ClientSystem.instance:openShopList(player)
+    end
+end
+
+Commands[Core.commands.getInstanceList] = function(args)
+    local player = Core.utils.getPlayerByUsername(args.username)
+    if player then
+        Core.ui.shop_instances.setData(player, args.data)
+        Core.ui.shop_selector.updateInstanceCounts(args.data)
+    end
+end
+
+Commands[Core.commands.requestShopDefs] = function(arguments)
+    Core.compileWith(arguments.overrides)
+end
+
+Commands[Core.commands.requestItemDefs] = function(arguments)
+
+    Core.debugLn("requestItemDefs: receiving chunk " .. arguments.row .. " of " .. arguments.totalRows)
+
+    if arguments.firstSend then
+        Core.defs.items = arguments.items
+    else
+        for k, v in pairs(arguments.items) do
+            Core.defs.items[k] = v
+        end
+    end
+
+    if arguments.completed then
+        triggerEvent(Core.events.OnShopItemDefsReloaded, Core.defs.items)
+        Core.debugLn("requestItemDefs: received all " .. arguments.totalRows .. " defs")
+    end
+end
+
+Commands[Core.commands.requestLocations] = function(args)
+    triggerEvent(Core.events.OnShopLocationsReceived, args.locations)
+end
+
+-- ---------------------------------------------------------------------------
+-- Token reward grant (playtime / kill milestone)
+-- ---------------------------------------------------------------------------
+
+-- Shared handler for both MP (server command) and SP (triggered event) paths.
+local function handleGrant(args)
+    -- Sync the local wallet copy so balance displays stay current.
+    if args.wallet and args.username then
+        Core.wallet:setPlayerData(args.username, args.wallet)
+    end
+    -- Show toast notification.
+    Toast.show({
+        text = args.message or "Reward!"
+    })
+end
+
+-- MP path: server sends this command after crediting the reward.
+Commands[Core.commands.grantReward] = function(args)
+    handleGrant(args)
+end
+
+-- SP path: server fires the event directly (same Lua state, no network hop).
+Events[Core.events.OnRewardGranted].Add(function(args)
+    if not args then
+        return
+    end
+    handleGrant(args)
+end)
+
+Commands[Core.commands.requestPool] = function(args)
+    local player = Core.utils.getPlayerByUsername(args.username)
+    if player then
+        -- A refresh follows an edit made inside the viewer, so it updates the
+        -- open window rather than replacing it and losing the scroll position.
+        if args.refresh then
+            Core.ui.client.poolViewer.refreshData(args.poolKey, args.data)
+        else
+            Core.ui.client.poolViewer.open(player, args.poolKey, args.data)
+        end
+    end
+end
+
+-- Sent after a trait removal that strands a vanilla stat. The stress moodle
+-- reads the smoker's withdrawal stat whether or not the trait is still held,
+-- and only this side's copy of the stats is the one the moodles are drawn from.
+Commands[Core.commands.clearTraitStats] = function(args)
+    local player = Core.utils.getPlayerByUsername(args.username)
+    if not player then
+        return
+    end
+    local Traits = require "PhunMart/traits"
+    local cleared = Traits.clearRemovalSideEffects(player, args.trait)
+    if cleared and isClient() and sendPlayerStat then
+        sendPlayerStat(player, cleared)
+    end
+end
+
+-- Server sends this after granting a VehicleKeySpawner so the client knows the vehicle script
+-- without relying on transmitModData (which may not exist in B42).
+Commands[Core.commands.spawnVehicle] = function(args)
+    if args.itemId then
+        Core._vehicleKeys[args.itemId] = {
+            vehicleScript = args.vehicleScript,
+            condition = args.condition
+        }
+    end
+end
+
+-- Server sends this after granting an AnimalClaimToken.
+Commands[Core.commands.spawnAnimal] = function(args)
+    if args.itemId then
+        Core._animalTokens[args.itemId] = {
+            animalType = args.animalType,
+            animalBreed = args.animalBreed,
+            animalSize = args.animalSize
+        }
+    end
+end
+
+-- Right-click a VehicleKeySpawner to claim the vehicle.
+Events.OnFillInventoryObjectContextMenu.Add(function(playerNum, ctx, items)
+    for _, v in ipairs(items) do
+        local item = type(v) == "table" and v.items and v.items[1] or v
+        if item and item.getFullType and item:getFullType() == "PhunMart.VehicleKeySpawner" then
+            local md = item:getModData()
+            -- modData may be empty if transmitModData failed; fall back to the lookup table
+            local keyData = Core._vehicleKeys[tostring(item:getID())]
+            local script = (md and md.vehicleScript) or (keyData and keyData.vehicleScript)
+            if script then
+                local label = Core.getVehicleLabel and Core.getVehicleLabel(script) or script
+                local player = getSpecificPlayer(playerNum)
+                local inBuilding = player and player:getSquare() and player:getSquare():getBuilding() ~= nil
+                local option = ctx:addOption("Claim: " .. label, playerNum, function(pNum)
+                    sendClientCommand(Core.name, Core.commands.claimVehicle, {
+                        vehicleScript = script
+                    })
+                end)
+                if inBuilding then
+                    option.notAvailable = true
+                    option.toolTip = ISToolTip:new()
+                    option.toolTip:initialise()
+                    option.toolTip.description = "You must be outside to claim a vehicle."
+                end
+            end
+        elseif item and item.getFullType and item:getFullType() == "PhunMart.AnimalClaimToken" then
+            local md = item:getModData()
+            local tokenData = Core._animalTokens[tostring(item:getID())]
+            local animalType = (md and md.animalType) or (tokenData and tokenData.animalType)
+            local animalBreed = (md and md.animalBreed) or (tokenData and tokenData.animalBreed)
+            if animalType and animalBreed then
+                local label = Core.getAnimalLabel and Core.getAnimalLabel(animalType, animalBreed) or
+                                  (animalType .. " (" .. animalBreed .. ")")
+                local player = getSpecificPlayer(playerNum)
+                local inBuilding = player and player:getSquare() and player:getSquare():getBuilding() ~= nil
+                local option = ctx:addOption("Release: " .. label, playerNum, function(pNum)
+                    sendClientCommand(Core.name, Core.commands.claimAnimal, {
+                        animalType = animalType,
+                        animalBreed = animalBreed
+                    })
+                end)
+                if inBuilding then
+                    option.notAvailable = true
+                    option.toolTip = ISToolTip:new()
+                    option.toolTip:initialise()
+                    option.toolTip.description = "You must be outside to release livestock."
+                end
+            end
+        end
+    end
+end)
+
+return Commands

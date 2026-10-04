@@ -1,4 +1,5 @@
-{
+﻿{
+  "Sandbox_PhunMart": "Eco Pesos - Motor (avanzado)",
   "Sandbox_EcoPesos": "Eco Pesos",
   "Sandbox_EcoPesos_FactorPrecios": "Factor de precios (%)",
   "Sandbox_EcoPesos_FactorPrecios_tooltip": "Escala todos los precios de las tiendas. 100 = precios normales, 200 = todo cuesta el doble, 50 = la mitad.",

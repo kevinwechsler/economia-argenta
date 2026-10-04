@@ -1,4 +1,4 @@
--- Precios de Eco Pesos.
+﻿-- Precios de Eco Pesos.
 --
 -- La moneda es el billete vanilla `Base.Money` (1 billete = 1 peso). PhunMart
 -- escribe todos sus montos en centavos, asi que `currency_base` usa factor
@@ -24,6 +24,11 @@ local function pesos(n)
 end
 
 return {
+
+    -- El motor referencia esta clave por nombre.
+    free = {
+        kind = "free"
+    },
 
     currency_base = {
         kind = "items",

@@ -1,5 +1,210 @@
 VERSION = 1,
 
+
+option PhunMart.ChanceToDropChange
+{
+    type = integer,
+    default = 30,
+    min=0,
+    max=100,
+    page = PhunMart,
+    translation = PhunMart_ChanceToDropChange,
+}
+
+option PhunMart.MinCoinsToDrop
+{
+    type = integer,
+    default = 5,
+    min=5,
+    max=1000,
+    page = PhunMart,
+    translation = PhunMart_MinCoinsToDrop,
+}
+
+option PhunMart.MaxCoinsToDrop
+{
+    type = integer,
+    default = 75,
+    min=10,
+    max=1000,
+    page = PhunMart,
+    translation = PhunMart_MaxCoinsToDrop,
+}
+
+option PhunMart.ChangeDropMode
+{
+    type = enum,
+    numValues = 3,
+    default = 1,
+    page = PhunMart,
+    translation = PhunMart_ChangeDropMode,
+    valueTranslation = PhunMart_ChangeDropMode,
+}
+
+option PhunMart.WalletOnDeath
+{
+    type = enum,
+    numValues = 3,
+    default = 1,
+    page = PhunMart,
+    translation = PhunMart_WalletOnDeath,
+    valueTranslation = PhunMart_WalletOnDeath,
+}
+
+option PhunMart.OnlyPickupOwn
+{
+    type = boolean,
+    default = true,
+    page = PhunMart,
+    translation = PhunMart_WalletOnlyPickupOwn,
+}
+
+option PhunMart.AllowWalletDrop
+{
+    type = boolean,
+    default = true,
+    page = PhunMart,
+    translation = PhunMart_AllowWalletDrop,
+}
+
+option PhunMart.ShopsMoveable
+{
+    type = boolean,
+    default = false,
+    page = PhunMart,
+    translation = PhunMart_ShopsMoveable,
+}
+
+option PhunMart.ShopsDestructible
+{
+    type = boolean,
+    default = false,
+    page = PhunMart,
+    translation = PhunMart_ShopsDestructible,
+}
+
+option PhunMart.ReturnRate
+{ 
+    type = integer, 
+    default = 100, 
+    min = 1,
+    max = 100,
+    page = PhunMart,
+    translation = PhunMart_WalletReturnRate,
+}
+
+option PhunMart.ChanceToConvert
+{
+    type = integer,
+    default = 0,
+    min=0,
+    max=100,
+    page = PhunMart,
+    translation=PhunMart_ChanceToConvert,
+}
+
+option PhunMart.DefaultDistance
+{
+    type = integer,
+    default = 200,
+    min=0,
+    max=10000,
+    page = PhunMart, 
+    translation=PhunMart_DefaultDistance,
+}
+
+option PhunMart.ChangeCapCents
+{
+    type = integer,
+    default = 9999,
+    min = 0,
+    max = 99999999,
+    page = PhunMart,
+    translation = PhunMart_ChangeCapCents,
+}
+
+option PhunMart.TokenCap
+{
+    type = integer,
+    default = 60,
+    min = 0,
+    max = 9999,
+    page = PhunMart,
+    translation = PhunMart_TokenCap,
+}
+
+option PhunMart.EnableChangePool
+{
+    type = boolean,
+    default = false,
+    page = PhunMart,
+    translation = PhunMart_EnableChangePool,
+}
+
+option PhunMart.EnableTokenPool
+{
+    type = boolean,
+    default = true,
+    page = PhunMart,
+    translation = PhunMart_EnableTokenPool,
+}
+
+option PhunMart.DefaultHoursToRestock
+{
+    type = integer,
+    min = 0,
+    max = 9999999,
+    default = 72,
+    page = PhunMart,
+    translation=PhunMart_DefaultHoursToRestock,
+}
+
+option PhunMart.DefaultNumOfHoursToReRoll
+{
+    type = integer,
+    min = 0,
+    max = 9999999,
+    default = 0,
+    page = PhunMart,
+    translation=PhunMart_DefaultNumOfHoursToReRoll,
+}
+
+option PhunMart.DefaultNumOfItemsWhenRestocking
+{
+    type = integer,
+    min = 0,
+    max = 9999999,
+    default = 5,
+    page = PhunMart,
+    translation=PhunMart_DefaultNumOfItemsWhenRestocking,
+}
+
+option PhunMart.MaxStickyItems
+{
+    type = integer,
+    default = 50,
+    min = 1,
+    max = 999,
+    page = PhunMart,
+    translation=PhunMart_MaxStickyItems,
+}
+
+option PhunMart.Debug
+{
+    type = boolean,
+    default = false,
+    page = PhunMart,
+    translation=PhunMart_Debug,
+}
+
+option PhunMart.EditorRole
+{
+    type = string,
+    default = ,
+    page = PhunMart,
+    translation=PhunMart_EditorRole,
+}
+
 option EcoPesos.FactorPrecios
 {
     type = integer,

@@ -1,7 +1,10 @@
 name=Eco Pesos - Economia Argentina
 id=EcoPesos
-description=Economia realista en pesos sobre PhunMart: la plata se consigue en el mundo, se canjean joyas por pesos y se compra en tiendas fijas colocadas por el admin. Basado en PhunMart 2 de UburGeek / PhunZoider (GPL-3.0).
+description=Economia realista en pesos: la plata se consigue en el mundo, se canjean joyas por pesos y se compra en tiendas fijas colocadas por el admin. Motor de tiendas basado en PhunMart 2 de UburGeek / PhunZoider (GPL-3.0), incluido y adaptado. Codigo abierto.
 author=Kevin
-modversion=0.1.0
+modversion=0.2.0
 versionMin=42.20
-require=phunmart2
+poster=poster.png
+icon=icon.png
+pack=phunmart
+tiledef=phunmart 1420

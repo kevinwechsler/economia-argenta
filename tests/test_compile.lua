@@ -4,12 +4,10 @@
 -- Uso: luajit tests/test_compile.lua   (desde la raiz del proyecto)
 local here = arg[0]:match("^(.*)[/\\][^/\\]*$") or "."
 local root = here .. "/.."
-local phun = root .. "/ref/PhunMart"
-local phunTests = phun .. "/Tests/lua"
-local phunShared = phun .. "/Contents/mods/PhunMart2/common/media/lua/shared"
+local phunTests = root .. "/tests/harness"
 local ecoShared = root .. "/mod/EcoPesos/common/media/lua/shared"
 
-package.path = phunTests .. "/?.lua;" .. phunShared .. "/?.lua;" .. ecoShared .. "/?.lua;" .. package.path
+package.path = phunTests .. "/?.lua;" .. ecoShared .. "/?.lua;" .. package.path
 
 local harness = require "harness"
 harness.installGlobals()
@@ -77,7 +75,6 @@ end
 
 require "PhunMart/core"
 require "PhunMart/compiler"
-require "EcoPesos/init"
 local Core = PhunMart
 
 harness.strip()
@@ -94,19 +91,6 @@ local function ok(label, condition, detail)
         print("  FAIL  " .. label .. (detail and ("  <- " .. tostring(detail)) or ""))
     end
 end
-
-print("-- registro en defaultPaths --")
-local function has(list, v)
-    for _, x in ipairs(list) do
-        if x == v then
-            return true
-        end
-    end
-    return false
-end
-ok("prices registrado", has(Core.defaultPaths.prices, "EcoPesos/defaults/prices"))
-ok("shops registrado", has(Core.defaultPaths.shops, "EcoPesos/defaults/shops"))
-ok("items registrado", has(Core.defaultPaths.items, "EcoPesos/defaults/items"))
 
 print("-- compilacion completa --")
 local runtime, log = Core.compileWith({})
