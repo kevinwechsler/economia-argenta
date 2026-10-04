@@ -31,7 +31,7 @@ GPL-3.0 (ver [LICENSE](LICENSE)).
 | Cuántos billetes hay en el mundo | `media/lua/server/EconomiaArgenta/billetes.lua` + sandbox |
 | Opciones de la partida | `media/sandbox-options.txt` (página "Economía Argenta") |
 | Textos | `media/lua/shared/Translate/{AR,ES,EN}/` (el juego en "Español (Argentina)" usa AR) |
-| Ícono del billete | `media/textures/Item_Money.png`, generado con `arte/hacer_icono.ps1` desde `arte/billete_original.jpg` |
+| Ícono del billete | `media/textures/Item_EA_Billete.png` (el billete usa ese ícono por `media/scripts/EconomiaArgenta_Billete.txt`), generado con `arte/hacer_icono.ps1` desde `arte/billete_original.jpg` |
 
 Todo bajo `mod/EconomiaArgenta/common/`. El motor vive en
 `media/lua/{client,server,shared}/PhunMart*` (nombre interno, no se cambia

@@ -1,14 +1,14 @@
 # Convierte la imagen del billete (fondo magenta) en el icono del juego.
 # Uso: powershell -ExecutionPolicy Bypass -File arte\hacer_icono.ps1 <imagen>
 # Genera:
-#   mod\EconomiaArgenta\common\media\textures\Item_Money.png  (32x32, el que usa el juego)
-#   arte\Item_Money_preview.png                               (ampliado x8 para mirarlo)
+#   mod\EconomiaArgenta\common\media\textures\Item_EA_Billete.png  (32x32, el que usa el juego)
+#   arte\Item_EA_Billete_preview.png                               (ampliado x8 para mirarlo)
 param([Parameter(Mandatory = $true)][string]$Origen)
 Add-Type -AssemblyName System.Drawing
 
 $raiz = Split-Path $PSScriptRoot -Parent
-$salida = Join-Path $raiz "mod\EconomiaArgenta\common\media\textures\Item_Money.png"
-$preview = Join-Path $PSScriptRoot "Item_Money_preview.png"
+$salida = Join-Path $raiz "mod\EconomiaArgenta\common\media\textures\Item_EA_Billete.png"
+$preview = Join-Path $PSScriptRoot "Item_EA_Billete_preview.png"
 $TAM = 32
 
 $src = [System.Drawing.Bitmap]::FromFile((Resolve-Path $Origen).Path)
