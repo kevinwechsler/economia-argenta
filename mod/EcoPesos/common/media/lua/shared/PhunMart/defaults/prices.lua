@@ -1,4 +1,4 @@
-﻿-- Precios de Eco Pesos.
+-- Precios de Eco Pesos.
 --
 -- La moneda es el billete vanilla `Base.Money` (1 billete = 1 peso). PhunMart
 -- escribe todos sus montos en centavos, asi que `currency_base` usa factor

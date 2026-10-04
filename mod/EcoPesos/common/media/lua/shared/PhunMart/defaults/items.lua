@@ -1,4 +1,4 @@
-﻿-- Precios por item de Eco Pesos.
+-- Precios por item de Eco Pesos.
 --
 -- Pisan el precio por defecto del grupo. Solo se listan los items que se
 -- apartan de su grupo; el resto usa el precio del grupo.
