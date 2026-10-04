@@ -70,9 +70,9 @@
   "Sandbox_PhunMart_EditorRole": "Editor Role",
   "Sandbox_PhunMart_EditorRole_tooltip": "If set, only players whose role name matches this value (case-insensitive) can open the editor. Leave empty to allow all players with access to debug/admin menu (or always allow in singleplayer).",
   "Sandbox_EcoPesos": "Eco Pesos",
-  "Sandbox_EcoPesos_FactorPrecios": "Price factor (%)",
+  "Sandbox_EcoPesos_FactorPrecios": "Price factor",
   "Sandbox_EcoPesos_FactorPrecios_tooltip": "Scales every shop price. 100 = normal, 200 = everything costs double, 50 = half.",
-  "Sandbox_EcoPesos_FactorCompraOro": "Gold buyer payout factor (%)",
+  "Sandbox_EcoPesos_FactorCompraOro": "Gold buyer payout factor",
   "Sandbox_EcoPesos_FactorCompraOro_tooltip": "Scales what the gold buyer pays for jewelry, gems and bars. 100 = normal.",
   "Sandbox_EcoPesos_RecompensasKills": "Cash rewards for zombie kills",
   "Sandbox_EcoPesos_RecompensasKills_tooltip": "Pays bills at kill milestones (50, 200, 500, 1000 and every 500). Requires 'Eco Pesos - Engine' > EnableTokenPool on."

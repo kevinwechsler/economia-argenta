@@ -17,8 +17,8 @@ end
 
 return {
 
-    EcoAlmacen = tienda({
-        category = "EcoAlmacen",
+    GoodPhoods = tienda({
+        category = "GoodPhoods",
         background = "machine-good-phoods.png",
         sprites = {"phunmart_01_8", "phunmart_01_9", "phunmart_01_10", "phunmart_01_11"},
         unpoweredSprites = {"phunmart_01_12", "phunmart_01_13", "phunmart_01_14", "phunmart_01_15"},
@@ -30,8 +30,8 @@ return {
         }}
     }),
 
-    EcoFerreteria = tienda({
-        category = "EcoFerreteria",
+    PittyTheTool = tienda({
+        category = "PittyTheTool",
         background = "machine-pity-the-tool.png",
         sprites = {"phunmart_01_24", "phunmart_01_25", "phunmart_01_26", "phunmart_01_27"},
         unpoweredSprites = {"phunmart_01_28", "phunmart_01_29", "phunmart_01_30", "phunmart_01_31"},
@@ -43,8 +43,8 @@ return {
         }}
     }),
 
-    EcoArmeria = tienda({
-        category = "EcoArmeria",
+    FinalAmendment = tienda({
+        category = "FinalAmendment",
         background = "machine-final-amendment.png",
         sprites = {"phunmart_01_32", "phunmart_01_33", "phunmart_01_34", "phunmart_01_35"},
         unpoweredSprites = {"phunmart_01_36", "phunmart_01_37", "phunmart_01_38", "phunmart_01_39"},
@@ -56,8 +56,8 @@ return {
         }}
     }),
 
-    EcoComproOro = tienda({
-        category = "EcoComproOro",
+    PrawnStars = tienda({
+        category = "PrawnStars",
         background = "machine-prawn-stars.png",
         sprites = {"phunmart_03_32", "phunmart_03_33", "phunmart_03_34", "phunmart_03_35"},
         unpoweredSprites = {"phunmart_03_36", "phunmart_03_37", "phunmart_03_38", "phunmart_03_39"},

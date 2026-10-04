@@ -64,17 +64,24 @@ powershell -ExecutionPolicy Bypass -File deploy.ps1
 4. Entrar con `-debug` (propiedades del juego en Steam → opciones de
    lanzamiento) para tener el menú de admin en single player.
 
-## Colocar una tienda (v0.2)
+## Colocar una tienda
 
-1. Con debug: menú de debug → **Items List** → buscar "Vending Machine" (por
-   ejemplo "Collectors Vending Machine") → agregarlo al inventario →
-   colocarlo como mueble en el lugar elegido.
-2. Click derecho en la máquina → abrir tienda. Como admin aparece
-   **Change to**: elegir `EcoAlmacen`, `EcoFerreteria`, `EcoArmeria` o
-   `EcoComproOro`.
-3. La máquina pasa a ser esa tienda y queda guardada en el mundo.
+El juego tiene que estar en modo debug (Steam → Project Zomboid →
+Propiedades → Opciones de lanzamiento: `-debug`).
+
+1. En la partida, menú de debug → **Items List** → buscar `Eco Tienda`.
+2. Agregar al inventario la que quieras: Almacén, Ferretería, Armería o
+   Compro Oro.
+3. Colocarla en el piso como un mueble.
+4. Click derecho sobre la máquina → **View Almacén** (o la que sea) → se
+   abre la tienda.
 
 En server se hace igual con un usuario admin.
+
+Nota técnica: el motor reconoce cada tienda por el nombre interno del tile
+del mueble (`CustomName`). Por eso las claves en `shops.lua` son
+`GoodPhoods`, `PittyTheTool`, `FinalAmendment` y `PrawnStars`, aunque en
+pantalla se llamen Almacén, Ferretería, Armería y Compro Oro.
 
 ## Validar sin abrir el juego
 

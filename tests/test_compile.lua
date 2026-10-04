@@ -118,7 +118,7 @@ local amt, item = Core.currencyValueOf(1500)
 ok("un pago de 1500 centavos son 15 billetes", amt == 15 and item == "Base.Money", tostring(amt) .. " " .. tostring(item))
 
 print("-- tiendas --")
-for _, name in ipairs({"EcoAlmacen", "EcoFerreteria", "EcoArmeria", "EcoComproOro"}) do
+for _, name in ipairs({"GoodPhoods", "PittyTheTool", "FinalAmendment", "PrawnStars"}) do
     local shop = runtime.shops[name]
     ok(name .. " existe en runtime", shop ~= nil)
     if shop then

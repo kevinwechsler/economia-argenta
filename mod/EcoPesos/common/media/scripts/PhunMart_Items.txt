@@ -93,7 +93,7 @@ module PhunMart
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = Good Phoods Vending Machine,
+        DisplayName       = Eco Tienda - Almacen,
         WorldObjectSprite = phunmart_01_8,
         
     }
@@ -104,7 +104,7 @@ module PhunMart
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = Pitty The Tool Vending Machine,
+        DisplayName       = Eco Tienda - Ferreteria,
         WorldObjectSprite = phunmart_01_24,
     }
 
@@ -114,7 +114,7 @@ module PhunMart
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = Final Amendment Vending Machine,
+        DisplayName       = Eco Tienda - Armeria,
         WorldObjectSprite = phunmart_01_32,
     }
 
@@ -244,7 +244,7 @@ module PhunMart
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = PrawnStars Vending Machine,
+        DisplayName       = Eco Tienda - Compro Oro,
         WorldObjectSprite = phunmart_03_32,
     }    
 
