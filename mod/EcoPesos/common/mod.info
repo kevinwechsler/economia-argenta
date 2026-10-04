@@ -1,0 +1,7 @@
+name=Eco Pesos - Economia Argentina
+id=EcoPesos
+description=Economia realista en pesos sobre PhunMart: la plata se consigue en el mundo, se canjean joyas por pesos y se compra en tiendas fijas colocadas por el admin. Basado en PhunMart 2 de UburGeek / PhunZoider (GPL-3.0).
+author=Kevin
+modversion=0.1.0
+versionMin=42.20
+require=phunmart2

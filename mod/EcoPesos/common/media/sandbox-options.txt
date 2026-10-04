@@ -1,0 +1,29 @@
+VERSION = 1,
+
+option EcoPesos.FactorPrecios
+{
+    type = integer,
+    default = 100,
+    min = 10,
+    max = 1000,
+    page = EcoPesos,
+    translation = EcoPesos_FactorPrecios,
+}
+
+option EcoPesos.FactorCompraOro
+{
+    type = integer,
+    default = 100,
+    min = 10,
+    max = 1000,
+    page = EcoPesos,
+    translation = EcoPesos_FactorCompraOro,
+}
+
+option EcoPesos.RecompensasKills
+{
+    type = boolean,
+    default = false,
+    page = EcoPesos,
+    translation = EcoPesos_RecompensasKills,
+}
