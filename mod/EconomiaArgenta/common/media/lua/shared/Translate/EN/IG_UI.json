@@ -655,5 +655,6 @@
   "IGUI_EconomiaArgenta_Admin_PreguntaPago": "How many bills does %1 pay? (now: %2)",
   "IGUI_EconomiaArgenta_Admin_NumeroInvalido": "Enter a whole number between 1 and 999.",
   "IGUI_EconomiaArgenta_Admin_PrecioGuardado": "%1: now %2 bills. Machines update by themselves.",
-  "IGUI_EconomiaArgenta_Admin_PrecioRestaurado": "%1 is back to its original price."
+  "IGUI_EconomiaArgenta_Admin_PrecioRestaurado": "%1 is back to its original price.",
+  "IGUI_EconomiaArgenta_Admin_DarTiendas": "Economía Argenta: get the 3 shops (admin)"
 }

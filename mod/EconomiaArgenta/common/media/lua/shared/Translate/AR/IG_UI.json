@@ -655,5 +655,6 @@
   "IGUI_EconomiaArgenta_Admin_PreguntaPago": "\u00bfCu\u00e1ntos billetes paga %1? (ahora: %2)",
   "IGUI_EconomiaArgenta_Admin_NumeroInvalido": "Escrib\u00ed un n\u00famero entero entre 1 y 999.",
   "IGUI_EconomiaArgenta_Admin_PrecioGuardado": "%1: ahora %2 billetes. Las m\u00e1quinas se actualizan solas.",
-  "IGUI_EconomiaArgenta_Admin_PrecioRestaurado": "%1 vuelve a su precio original."
+  "IGUI_EconomiaArgenta_Admin_PrecioRestaurado": "%1 vuelve a su precio original.",
+  "IGUI_EconomiaArgenta_Admin_DarTiendas": "Economía Argenta: recibir las 3 tiendas (admin)"
 }

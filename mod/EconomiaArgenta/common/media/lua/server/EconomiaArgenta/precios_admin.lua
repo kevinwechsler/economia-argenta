@@ -53,6 +53,24 @@ Commands["ecoCambiarPrecio"] = function(player, args)
               (args.pago and " billetes de pago" or " billetes"))
 end
 
+-- "Recibir las 3 tiendas" (client/EconomiaArgenta/admin_tiendas.lua): pone
+-- las maquinas en el inventario del admin para colocarlas como mueble.
+local TIENDAS = {"PhunMart.PittyTheTool", "PhunMart.FinalAmendment", "PhunMart.PrawnStars"}
+
+Commands["ecoDarTiendas"] = function(player)
+    if not esAdmin(player) then
+        return
+    end
+    local inv = player:getInventory()
+    for _, tipo in ipairs(TIENDAS) do
+        local item = inv:AddItem(tipo)
+        if item then
+            sendAddItemToContainer(inv, item)
+        end
+    end
+    print("[EconomiaArgenta] " .. player:getUsername() .. " recibio las 3 tiendas")
+end
+
 Commands["ecoPrecioOriginal"] = function(player, args)
     if not esAdmin(player) or type(args) ~= "table" or type(args.item) ~= "string" then
         return
