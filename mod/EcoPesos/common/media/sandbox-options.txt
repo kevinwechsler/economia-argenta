@@ -62,7 +62,7 @@ option PhunMart.OnlyPickupOwn
 option PhunMart.AllowWalletDrop
 {
     type = boolean,
-    default = true,
+    default = false,
     page = PhunMart,
     translation = PhunMart_AllowWalletDrop,
 }
@@ -144,7 +144,7 @@ option PhunMart.EnableChangePool
 option PhunMart.EnableTokenPool
 {
     type = boolean,
-    default = true,
+    default = false,
     page = PhunMart,
     translation = PhunMart_EnableTokenPool,
 }
@@ -228,7 +228,7 @@ option EcoPesos.FactorCompraOro
 option EcoPesos.RecompensasKills
 {
     type = boolean,
-    default = false,
+    default = true,
     page = EcoPesos,
     translation = EcoPesos_RecompensasKills,
 }

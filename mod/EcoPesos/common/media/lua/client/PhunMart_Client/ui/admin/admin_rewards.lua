@@ -18,7 +18,7 @@ local SCROLLBAR_W = ListPanel.SCROLLBAR_W
 -- Helpers
 ---------------------------------------------------------------------------
 
-local CATEGORIES = {"playtime", "zombieKills", "sprinterKills"}
+local CATEGORIES = {"zombieKills", "sprinterKills"}
 
 -- Return whether an entry is a recurring reward.
 local function isRecurring(category, entry)
@@ -101,7 +101,7 @@ local function updateThresholdHint(form, cat)
 end
 
 local function createEditModal(category, entry, editIndex, isNew, cb)
-    category = category or "playtime"
+    category = category or CATEGORIES[1]
 
     -- Pre-compute defaults from entry
     local recurringDefault = entry and isRecurring(category, entry) or false

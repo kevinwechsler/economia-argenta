@@ -287,10 +287,9 @@ end
 function Core.wallet:reset(player)
     local name = self:nameOf(player)
 
+    -- The server owns resets (death handler, player-data clear); the old
+    -- client->server resetWallet command was removed with the wallet UI.
     if isClient() and not Core.isLocal then
-        sendClientCommand(Core.name, Core.commands.resetWallet, {
-            username = name
-        })
         return
     end
 

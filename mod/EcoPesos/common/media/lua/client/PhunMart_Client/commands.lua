@@ -7,22 +7,6 @@ local Toast = require "PhunMart_Client/ui/toast"
 
 local Commands = {}
 
--- itemId (string) → { vehicleScript, condition }, populated by the spawnVehicle command
-Core._vehicleKeys = Core._vehicleKeys or {}
--- itemId (string) → { animalType, animalBreed, animalSize }, populated by the spawnAnimal command
-Core._animalTokens = Core._animalTokens or {}
-
-Commands[Core.commands.updateWallet] = function(args)
-    local player = Core.utils.getPlayerByUsername(args.username)
-    for k, v in pairs(args.wallet) do
-        Core.wallet:adjust(player, k, v)
-    end
-end
-
-Commands[Core.commands.getWallet] = function(args)
-    Core.wallet:setPlayerData(args.username, args.wallet)
-end
-
 Commands[Core.commands.openError] = function(args)
     -- Signal the open_shop timed action (if still waiting) to abort early.
     if args.key then
@@ -60,13 +44,6 @@ Commands[Core.commands.updateHistory] = function(arguments)
 end
 
 Commands[Core.commands.buy] = function(arguments)
-    -- Update local wallet copy so balance display stays current
-    if arguments.wallet and arguments.wallet.current then
-        local username = getSpecificPlayer(arguments.playerIndex or 0)
-        if username then
-            Core.wallet:setPlayerData(username:getUsername(), arguments.wallet)
-        end
-    end
     -- Item-based currency is removed server-side; sendRemoveItemFromContainer
     -- already synced the inventory before this confirmation arrives.
     -- Fire event so the open shop window can update stock and buy button
@@ -187,14 +164,22 @@ end
 -- ---------------------------------------------------------------------------
 
 -- Shared handler for both MP (server command) and SP (triggered event) paths.
-local function handleGrant(args)
-    -- Sync the local wallet copy so balance displays stay current.
-    if args.wallet and args.username then
-        Core.wallet:setPlayerData(args.username, args.wallet)
+--- Texto del aviso de un reto de Eco Pesos, en el idioma del jugador.
+local function retoText(args)
+    local reto = args.reto
+    if type(reto) ~= "table" or not reto.kills then
+        return nil
     end
+    local que = getText(reto.kind == "sprinter" and "IGUI_EcoPesos_Reto_Corredores" or "IGUI_EcoPesos_Reto_Zombies")
+    local premio = args.item == "Base.Money" and getText("IGUI_EcoPesos_Reto_Pesos", tostring(args.amount or 0)) or
+                       (tostring(args.amount or 1) .. "x " .. tostring(args.item))
+    return getText("IGUI_EcoPesos_Reto_Cumplido", tostring(reto.kills), que, premio)
+end
+
+local function handleGrant(args)
     -- Show toast notification.
     Toast.show({
-        text = args.message or "Reward!"
+        text = retoText(args) or args.message or "Reward!"
     })
 end
 
@@ -223,94 +208,5 @@ Commands[Core.commands.requestPool] = function(args)
         end
     end
 end
-
--- Sent after a trait removal that strands a vanilla stat. The stress moodle
--- reads the smoker's withdrawal stat whether or not the trait is still held,
--- and only this side's copy of the stats is the one the moodles are drawn from.
-Commands[Core.commands.clearTraitStats] = function(args)
-    local player = Core.utils.getPlayerByUsername(args.username)
-    if not player then
-        return
-    end
-    local Traits = require "PhunMart/traits"
-    local cleared = Traits.clearRemovalSideEffects(player, args.trait)
-    if cleared and isClient() and sendPlayerStat then
-        sendPlayerStat(player, cleared)
-    end
-end
-
--- Server sends this after granting a VehicleKeySpawner so the client knows the vehicle script
--- without relying on transmitModData (which may not exist in B42).
-Commands[Core.commands.spawnVehicle] = function(args)
-    if args.itemId then
-        Core._vehicleKeys[args.itemId] = {
-            vehicleScript = args.vehicleScript,
-            condition = args.condition
-        }
-    end
-end
-
--- Server sends this after granting an AnimalClaimToken.
-Commands[Core.commands.spawnAnimal] = function(args)
-    if args.itemId then
-        Core._animalTokens[args.itemId] = {
-            animalType = args.animalType,
-            animalBreed = args.animalBreed,
-            animalSize = args.animalSize
-        }
-    end
-end
-
--- Right-click a VehicleKeySpawner to claim the vehicle.
-Events.OnFillInventoryObjectContextMenu.Add(function(playerNum, ctx, items)
-    for _, v in ipairs(items) do
-        local item = type(v) == "table" and v.items and v.items[1] or v
-        if item and item.getFullType and item:getFullType() == "PhunMart.VehicleKeySpawner" then
-            local md = item:getModData()
-            -- modData may be empty if transmitModData failed; fall back to the lookup table
-            local keyData = Core._vehicleKeys[tostring(item:getID())]
-            local script = (md and md.vehicleScript) or (keyData and keyData.vehicleScript)
-            if script then
-                local label = Core.getVehicleLabel and Core.getVehicleLabel(script) or script
-                local player = getSpecificPlayer(playerNum)
-                local inBuilding = player and player:getSquare() and player:getSquare():getBuilding() ~= nil
-                local option = ctx:addOption("Claim: " .. label, playerNum, function(pNum)
-                    sendClientCommand(Core.name, Core.commands.claimVehicle, {
-                        vehicleScript = script
-                    })
-                end)
-                if inBuilding then
-                    option.notAvailable = true
-                    option.toolTip = ISToolTip:new()
-                    option.toolTip:initialise()
-                    option.toolTip.description = "You must be outside to claim a vehicle."
-                end
-            end
-        elseif item and item.getFullType and item:getFullType() == "PhunMart.AnimalClaimToken" then
-            local md = item:getModData()
-            local tokenData = Core._animalTokens[tostring(item:getID())]
-            local animalType = (md and md.animalType) or (tokenData and tokenData.animalType)
-            local animalBreed = (md and md.animalBreed) or (tokenData and tokenData.animalBreed)
-            if animalType and animalBreed then
-                local label = Core.getAnimalLabel and Core.getAnimalLabel(animalType, animalBreed) or
-                                  (animalType .. " (" .. animalBreed .. ")")
-                local player = getSpecificPlayer(playerNum)
-                local inBuilding = player and player:getSquare() and player:getSquare():getBuilding() ~= nil
-                local option = ctx:addOption("Release: " .. label, playerNum, function(pNum)
-                    sendClientCommand(Core.name, Core.commands.claimAnimal, {
-                        animalType = animalType,
-                        animalBreed = animalBreed
-                    })
-                end)
-                if inBuilding then
-                    option.notAvailable = true
-                    option.toolTip = ISToolTip:new()
-                    option.toolTip:initialise()
-                    option.toolTip.description = "You must be outside to release livestock."
-                end
-            end
-        end
-    end
-end)
 
 return Commands

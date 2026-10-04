@@ -17,7 +17,6 @@ end
 local Core = PhunMart
 local ListPanel = require "PhunMart_Client/ui/base/list_panel"
 local ShopWizard = require "PhunMart_Client/ui/admin/shop_wizard"
-local CurrencyTool = require "PhunMart_Client/ui/admin/currency_tool"
 local PendingRestock = require "PhunMart_Client/ui/admin/pending_restock"
 local PlayerDataTool = require "PhunMart_Client/ui/admin/player_data_tool"
 local tools = require "PhunMart_Client/ui/ui_utils"
@@ -81,13 +80,6 @@ local TOOLS = {{
     desc = "IGUI_PhunMart_ToolDesc_NewShop",
     run = function(panel)
         ShopWizard.openThenEdit(panel.player, panel.shell)
-    end
-}, {
-    key = "currency",
-    label = "IGUI_PhunMart_Tool_Currency",
-    desc = "IGUI_PhunMart_ToolDesc_Currency",
-    run = function(panel)
-        CurrencyTool.open(panel.player)
     end
 }, {
     -- The wallet editor was a row here until it became a tab of its own. A row

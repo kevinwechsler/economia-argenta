@@ -39,7 +39,8 @@ Events.OnZombieDead.Add(function(zombie)
         return
     end
 
-    if Core.getOption("EnableTokenPool") == false then
+    local eco = SandboxVars and SandboxVars.EcoPesos
+    if not (eco and eco.RecompensasKills) then
         return
     end
 

@@ -26,7 +26,6 @@ Events.OnCharacterDeath.Add(function(character)
         return
     end
 
-    Core.playtimeRewards:getPlayerData(character).previousHours = character:getHoursSurvived()
 
     -- What death does to a balance, per the WalletOnDeath sandbox option. One
     -- setting rather than the DropOnDeath boolean and a second one beside it,
@@ -96,12 +95,6 @@ Events.OnCharacterDeath.Add(function(character)
     end
 end)
 
--- The wallet used to be flushed to disk here as well. It lives only in ModData
--- now, which the game persists on its own schedule, so there is nothing to
--- flush and this tick is the playtime check alone.
-Events.EveryTenMinutes.Add(function()
-    Core.playtimeRewards:tick()
-end)
 
 -- How close a player has to be for a machine to hold off rerolling. Far enough
 -- that a machine never changes identity in view of the person about to use it,
@@ -159,125 +152,6 @@ Events.EveryOneMinute.Add(function()
             obj:updateSprite()
         end
     end
-end)
-
--- How a zombie's payout reaches the player, per the ChangeDropMode sandbox
--- option. The mode picks the vessel and nothing else: the roll that decides
--- whether there is a payout and how big it is runs first and identically for
--- all three, so ChanceToDropChange, the min/max, and the per-zone and sprinter
--- tuning that PhunZones layers onto getCoinChance apply the same either way.
--- That was the whole reason for putting the switch here rather than turning the
--- drop off and paying through the kill rewards, which know none of that.
-local DROP_COINS = 1 -- loose quarters, dimes and nickels in the corpse
-local DROP_CHANGE = 2 -- one Change item in the corpse, holding the lot
-local DROP_AUTO = 3 -- straight into the killer's wallet, no item at all
-
---- Split an amount of cents into the fewest coins and put them in a container.
-local function addCoins(container, totalCents)
-    local rem = totalCents
-    local quarters = math.floor(rem / 25);
-    rem = rem - quarters * 25
-    local dimes = math.floor(rem / 10);
-    rem = rem - dimes * 10
-    local nickels = math.floor(rem / 5)
-
-    for _ = 1, quarters do
-        container:AddItem("PhunMart.Quarter")
-    end
-    for _ = 1, dimes do
-        container:AddItem("PhunMart.Dime")
-    end
-    for _ = 1, nickels do
-        container:AddItem("PhunMart.Nickel")
-    end
-end
-
---- The player who landed the killing blow, or nil if nothing player-shaped did.
-local function killerOf(zombie)
-    local killer = zombie:getAttackedBy()
-    -- instanceof("IsoPlayer") also matches IsoAnimal in current B42 builds, so
-    -- reject animals explicitly before treating this as a player.
-    if not killer or not instanceof(killer, "IsoPlayer") or killer:isAnimal() then
-        return nil
-    end
-    return killer
-end
-
---- Tell a player's client its balance moved. Singleplayer shares the one wallet
---- table with the UI, so there is nothing to send there.
-local function syncWallet(player)
-    if Core.isLocal then
-        return
-    end
-    sendServerCommand(player, Core.name, Core.commands.getWallet, {
-        username = player:getUsername(),
-        wallet = Core.wallet:get(player)
-    })
-end
-
-Events.OnZombieDead.Add(function(character)
-    if not instanceof(character, "IsoZombie") then
-        return
-    end
-
-    if Core.getOption("EnableChangePool") == false then
-        return
-    end
-
-    local chance, minCents, maxCents = Core.getCoinChance(character)
-
-    if ZombRand(100) >= math.floor(chance * 100) then
-        return
-    end
-
-    -- pick a random nickel-aligned amount in [minCents, maxCents]
-    local steps = math.max(0, math.floor((maxCents - minCents) / 5))
-    local totalCents = minCents + ZombRand(0, steps + 1) * 5
-    if totalCents <= 0 then
-        return
-    end
-
-    local mode = Core.getOption("ChangeDropMode", DROP_COINS)
-    local inv = character:getInventory()
-
-    if mode == DROP_AUTO then
-        local killer = killerOf(character)
-        if killer then
-            -- Clamped here because adjustByPool does not clamp, unlike the coin
-            -- and wallet-item pickup paths that the other two modes go through.
-            -- Without this, choosing this mode would quietly switch
-            -- ChangeCapCents off. Overflow is discarded rather than left behind
-            -- as an item, since being at cap already means more money than
-            -- there is anything to spend it on.
-            local cap = Core.wallet:getCap("change")
-            local bal = Core.wallet:getBalance(killer, "change")
-            local toAdd = cap and math.min(totalCents, cap - bal) or totalCents
-            if toAdd > 0 then
-                Core.wallet:adjustByPool(killer, "current", "change", toAdd)
-                syncWallet(killer)
-            end
-            return
-        end
-        -- Nothing player-shaped killed it, so there is nobody to credit. Fall
-        -- back to an item rather than voiding the payout: a zombie burned or run
-        -- over still earned what the roll gave it, and the corpse is where
-        -- whoever arranged that will come looking.
-        Core.wallet:addChangeToContainer(inv, {{
-            pool = "change",
-            amount = totalCents
-        }})
-        return
-    end
-
-    if mode == DROP_CHANGE then
-        Core.wallet:addChangeToContainer(inv, {{
-            pool = "change",
-            amount = totalCents
-        }})
-        return
-    end
-
-    addCoins(inv, totalCents)
 end)
 
 Events.OnClientCommand.Add(function(module, command, playerObj, arguments)

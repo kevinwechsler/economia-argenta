@@ -63,189 +63,6 @@ function Core:grantReward(player, action, qty, context)
             end
         end
 
-    elseif t == "addTrait" or t == "removeTrait" then
-        local Traits = require "PhunMart/traits"
-        local entry = Traits.get(action.trait)
-        if entry and entry.def then
-            local traitType = entry.def:getType()
-            local add = (t == "addTrait")
-            if add then
-                player:getCharacterTraits():add(traitType)
-                player:modifyTraitXPBoost(traitType, false)
-            else
-                player:getCharacterTraits():remove(traitType)
-                player:modifyTraitXPBoost(traitType, true)
-                -- Taking a trait away does not undo the stats it was feeding,
-                -- and some of those only ever come down through the trait's own
-                -- upkeep. See Traits.clearRemovalSideEffects: Smoker leaves its
-                -- withdrawal stat behind, and that stat is added straight into
-                -- the stress moodle whether or not the character still smokes.
-                local cleared = Traits.clearRemovalSideEffects(player, action.trait)
-                if cleared and not Core.isLocal then
-                    -- The client owns its character's stats -- the server's copy
-                    -- is overwritten by the next player packet -- so the clear
-                    -- has to happen over there as well.
-                    sendServerCommand(player, Core.name, Core.commands.clearTraitStats, {
-                        username = player:getUsername(),
-                        trait = action.trait
-                    })
-                end
-            end
-            SyncXp(player)
-        else
-            Core.debugLn("grantReward: no trait def for '" .. tostring(action.trait) .. "'")
-        end
-
-    elseif t == "giveXP" then
-        local perk = Perks[action.skill]
-        if perk then
-            addXp(player, perk, (action.amount or 0) * qty)
-        else
-            Core.debugLn("grantReward: unknown perk '" .. tostring(action.skill) .. "'")
-        end
-
-    elseif t == "spawnVehicle" then
-        -- Filter scripts to those confirmed in the vehicle database at grant time.
-        -- Guards against mods removed after the last compile (post-restock window).
-        local scripts = action.scripts or (action.script and {action.script}) or {}
-        local validScripts = {}
-        for _, s in ipairs(scripts) do
-            if Core.vehicleScriptExists(s) then
-                table.insert(validScripts, s)
-            else
-                Core.debugLn("grantReward: vehicle script '" .. s .. "' not found at grant time -- skipped")
-            end
-        end
-
-        -- Prefer the player's selected script (context.offerItem); validate it too.
-        -- Falls back to a random valid script if the selected one is no longer loaded.
-        local selected = context and context.offerItem
-        local scriptName
-        if selected and Core.vehicleScriptExists(selected) then
-            scriptName = selected
-        elseif #validScripts > 0 then
-            scriptName = validScripts[ZombRand(#validScripts) + 1]
-        end
-        if scriptName then
-            local item = player:getInventory():AddItem("PhunMart.VehicleKeySpawner")
-            if item then
-                sendAddItemToContainer(player:getInventory(), item)
-                -- Both ranges travel on the key as ranges, not as rolled numbers.
-                -- The roll happens when the key is used, so two keys bought
-                -- together are not identical cars.
-                local condition = action.args and action.args.condition or nil
-                local fuel = action.args and action.args.fuel or nil
-                local vehicleLabel = Core.getVehicleLabel(scriptName) or scriptName
-                item:setName("Vehicle Claim Key: " .. vehicleLabel)
-                item:getModData()["vehicleScript"] = scriptName
-                item:getModData()["condition"] = condition
-                item:getModData()["fuel"] = fuel
-                sendAddItemToContainer(player:getInventory(), item)
-                sendServerCommand(player, Core.name, Core.commands.spawnVehicle, {
-                    itemId = tostring(item:getID()),
-                    vehicleScript = scriptName,
-                    condition = condition
-                })
-            else
-                Core.debugLn("grantReward: failed to add VehicleKeySpawner for '" .. scriptName .. "'")
-            end
-        end
-
-    elseif t == "spawnAnimal" then
-        -- Build candidate list from animals[] and/or singular animal+breed.
-        local entries = {}
-        if type(action.animals) == "table" then
-            for _, e in ipairs(action.animals) do
-                table.insert(entries, e)
-            end
-        elseif action.animal or action.typeAnimal then
-            table.insert(entries, {
-                animal = action.animal or action.typeAnimal,
-                breed = action.breed,
-                size = action.size
-            })
-        end
-        local valid = {}
-        for _, e in ipairs(entries) do
-            local aType = e.animal or e.type
-            local aBreed = e.breed
-            if aType and aBreed and Core.animalTypeExists(aType) and Core.animalBreedExists(aType, aBreed) then
-                table.insert(valid, {
-                    animal = aType,
-                    breed = aBreed,
-                    size = e.size or action.size or "medium"
-                })
-            else
-                Core.debugLn("grantReward: animal '" .. tostring(aType) .. "/" .. tostring(aBreed) ..
-                                 "' not found at grant time -- skipped")
-            end
-        end
-
-        local selected = nil
-        -- Prefer offer.item when it encodes "type:breed" and is still valid.
-        local offerItem = context and context.offerItem
-        if type(offerItem) == "string" and offerItem:find(":") then
-            local oType, oBreed = offerItem:match("^([^:]+):(.+)$")
-            if oType and oBreed and Core.animalTypeExists(oType) and Core.animalBreedExists(oType, oBreed) then
-                selected = {
-                    animal = oType,
-                    breed = oBreed,
-                    size = action.size or "medium"
-                }
-            end
-        end
-        if not selected and #valid > 0 then
-            selected = valid[ZombRand(#valid) + 1]
-        end
-
-        if selected then
-            local item = player:getInventory():AddItem("PhunMart.AnimalClaimToken")
-            if item then
-                sendAddItemToContainer(player:getInventory(), item)
-                local size = selected.size or "medium"
-                local weight = (Core.animalClaimWeights and Core.animalClaimWeights[size]) or 5.0
-                item:setWeight(weight)
-                if item.setActualWeight then
-                    item:setActualWeight(weight)
-                end
-                local label = Core.getAnimalLabel(selected.animal, selected.breed)
-                item:setName("Livestock Claim: " .. label)
-                item:getModData()["animalType"] = selected.animal
-                item:getModData()["animalBreed"] = selected.breed
-                item:getModData()["animalSize"] = size
-                sendAddItemToContainer(player:getInventory(), item)
-                sendServerCommand(player, Core.name, Core.commands.spawnAnimal, {
-                    itemId = tostring(item:getID()),
-                    animalType = selected.animal,
-                    animalBreed = selected.breed,
-                    animalSize = size
-                })
-            else
-                Core.debugLn("grantReward: failed to add AnimalClaimToken for '" .. selected.animal .. "/" ..
-                                 selected.breed .. "'")
-            end
-        end
-
-    elseif t == "applyBoost" then
-        local ok, err = pcall(function()
-            local perk = Perks[action.skill]
-            if not perk then
-                error("unknown perk: " .. tostring(action.skill))
-            end
-            local level = math.min(3, math.max(1, math.floor(action.multiplier or 1)))
-            player:getXp():setPerkBoost(perk, level)
-            SyncXp(player)
-        end)
-        if not ok then
-            Core.debugLn("grantReward: applyBoost failed for '" .. tostring(action.skill) .. "': " .. tostring(err))
-        end
-
-    elseif t == "grantBoundTokens" then
-        -- Grant bound tokens: credited to both current (spendable) and bound (death-restored) pools.
-        local amt = (action.amount or 1) * qty
-        Core.wallet:adjustByPool(player, "current", "tokens", amt)
-        Core.wallet:adjustByPool(player, "bound", "tokens", amt)
-
     elseif t == "adjustBalance" then
         -- Pay for something the machine has bought: the pawn payouts, and
         -- anything else crediting the wallet.
@@ -288,7 +105,10 @@ end
 -- For bound currency items, credits both current and bound wallet pools.
 -- For regular items, spawns into player inventory.
 -- reason: display string included in the notification message.
-function Core:grantConfigReward(player, reward, reason)
+--- `reto` (opcional) describe el reto de Eco Pesos que se cumplio:
+--- { kind = "zombie" | "sprinter", kills = N, every = bool }. Viaja al cliente
+--- para que arme el aviso en el idioma del jugador.
+function Core:grantConfigReward(player, reward, reason, reto)
     local item = reward.item
     local amount = reward.amount or 1
     local currency = Core.wallet.currencies[item]
@@ -325,14 +145,20 @@ function Core:grantConfigReward(player, reward, reason)
         triggerEvent(Core.events.OnRewardGranted, {
             message = msg,
             wallet = wallet,
-            username = player:getUsername()
+            username = player:getUsername(),
+            reto = reto,
+            item = item,
+            amount = amount
         })
     else
         sendServerCommand(player, Core.name, Core.commands.grantReward, {
             playerIndex = player:getPlayerNum(),
             username = player:getUsername(),
             message = msg,
-            wallet = wallet
+            wallet = wallet,
+            reto = reto,
+            item = item,
+            amount = amount
         })
     end
 end
@@ -506,8 +332,7 @@ function Core:ini()
     local ok, tokenDefaults = pcall(require, "PhunMart/defaults/token_rewards")
     Core.tokenRewardsCfg = Core.fileUtils.loadTable(Core.configFiles.tokenRewards) or (ok and tokenDefaults) or {}
 
-    -- Wire playtime and kill-tracking modules.
-    require "PhunMart_Server/rewards_playtime"
+    -- Wire kill-tracking module.
     require "PhunMart_Server/rewards_kill"
 
     require "PhunMart_Server/player_data"
@@ -515,7 +340,6 @@ function Core:ini()
     -- All four bind to their ModData table, so they belong to this save. The
     -- import that follows is a one-off for anyone upgrading from the version
     -- that kept them in files, and needs the tables to exist first.
-    Core.playtimeRewards:load()
     Core.killRewards:load()
     Core.purchases:load()
     Core.wallet:load()

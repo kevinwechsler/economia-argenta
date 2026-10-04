@@ -29,7 +29,6 @@ require "PhunMart_Client/ui/admin/admin_prices"
 require "PhunMart_Client/ui/admin/admin_conditions"
 require "PhunMart_Client/ui/admin/admin_blacklist"
 require "PhunMart_Client/ui/admin/admin_rewards"
-require "PhunMart_Client/ui/admin/admin_wallet"
 require "PhunMart_Client/ui/admin/admin_tools"
 
 local FONT_SCALE = ListPanel.FONT_SCALE
@@ -100,13 +99,6 @@ for _, spec in ipairs({{
     module = "admin_rewards",
     label = "IGUI_PhunMart_Btn_Rewards",
     order = 90
-}, {
-    -- Next to Rewards on purpose: that tab sets how tokens are earned, this one
-    -- shows what everyone ended up holding.
-    key = "wallets",
-    module = "admin_wallet",
-    label = "IGUI_PhunMart_Btn_Wallets",
-    order = 100
 }, {
     -- Last, and deliberately outside the chain: nothing on this tab edits a
     -- definition, so it does not belong anywhere among the ones that do. Far

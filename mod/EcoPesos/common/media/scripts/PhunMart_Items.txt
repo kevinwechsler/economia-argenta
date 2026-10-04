@@ -5,95 +5,13 @@ module PhunMart
         Base,
     }
 
-	item DroppedWallet
-    {
-        DisplayName = Wallet,
-        ItemType = base:normal,
-        Weight = 1,
-        Icon = DroppedWallet,
-		IsHidden = true,
-        WorldStaticModel 	= PhunWallet,
-        StaticModel 	= PhunWallet,
-        DisplayCategory = Currency,
-    }
-
-    item Nickel
-    {
-        Weight = 0.01,
-        ItemType = base:normal,
-        DisplayName = Nickel,
-        Icon = NickelCoin,
-        Scale = 0.1,
-        DisplayCategory = Currency,
-    }
-
-    item Dime
-    {
-        Weight = 0.01,
-        ItemType = base:normal,
-        DisplayName = Dime,
-        Icon = DimeCoin,
-        Scale = 0.1,
-        DisplayCategory = Currency,
-    }
-
-    item Quarter
-    {
-        Weight = 0.01,
-        ItemType = base:normal,
-        DisplayName = Quarter,
-        Icon = QuarterCoin,
-        Scale = 0.1,
-        DisplayCategory = Currency,
-    }
-
-    item Change
-    {
-        DisplayName = Change,
-        ItemType = base:normal,
-        Weight = 0.1,
-        Icon = SilverDollar,
-        WorldStaticModel = SilverCoin,
-        StaticModel = SilverCoin,
-        DisplayCategory = Currency,
-    }
-
-    item Token
-    {
-        Weight = 0.01,
-        ItemType = base:normal,
-        DisplayName = Traiter Joe Token,
-        Icon = TraiterToken,
-        Scale = 0.1,
-        DisplayCategory = Currency,
-    }
-
-    item VehicleKeySpawner
-    {
-        DisplayName     =   Vehicle Claim Key,
-        ItemType        =   base:normal,
-        Weight          =   10,
-        Icon            =   CarKey,
-        DisplayCategory =   Currency,
-    }
-
-    item AnimalClaimToken
-    {
-        DisplayName     =   Livestock Claim Cage,
-        ItemType        =   base:normal,
-        Weight          =   10,
-        Icon            =   TrapCage,
-        DisplayCategory =   Animal,
-        WorldStaticModel = TrapCage,
-    }
-
     item GoodPhoods
     {
         DisplayCategory   = Furniture,
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = Eco Tienda - Almacen,
+        DisplayName       = Eco Tienda - Almacén,
         WorldObjectSprite = phunmart_01_8,
         
     }
@@ -104,7 +22,7 @@ module PhunMart
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = Eco Tienda - Ferreteria,
+        DisplayName       = Eco Tienda - Ferretería,
         WorldObjectSprite = phunmart_01_24,
     }
 
@@ -114,128 +32,8 @@ module PhunMart
         ItemType          = base:moveable,
         Icon              = VendingMachine,
         Weight            = 250,
-        DisplayName       = Eco Tienda - Armeria,
+        DisplayName       = Eco Tienda - Armería,
         WorldObjectSprite = phunmart_01_32,
-    }
-
-    item WrentAWreck
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Wrent A Wreck Vending Machine,
-        WorldObjectSprite = phunmart_01_40,
-    }
-
-    item MichellesCrafts
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Michelle Crafts Vending Machine,
-        WorldObjectSprite = phunmart_01_48,
-    }
-
-    item CarAParts
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Car-A-Part Vending Machine,
-        WorldObjectSprite = phunmart_01_56,
-    }
-
-    item TraiterJoes
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Traiter Joes Vending Machine,
-        WorldObjectSprite = phunmart_02_1,
-    }
-
-    item CSVPharmacy
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = CSV Pharmacy Vending Machine,
-        WorldObjectSprite = phunmart_02_8,
-    }
-
-    item RadioHacks
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Radio Hacks Vending Machine,
-        WorldObjectSprite = phunmart_02_16,
-    }
-
-    item Phish4U
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Phish4U Vending Machine,
-        WorldObjectSprite = phunmart_02_24,
-    }
-
-    item HoesNMoes
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = HoesNMoes Vending Machine,
-        WorldObjectSprite = phunmart_02_32,
-    }
-
-    item BudgetXPerience
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = BudgetXp Vending Machine,
-        WorldObjectSprite = phunmart_02_40,
-    }
-
-    item HardWear
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = HardWear Vending Machine,
-        WorldObjectSprite = phunmart_03_1,
-    }
-
-    item Collectors
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Collectors Vending Machine,
-        WorldObjectSprite = phunmart_03_8,
-    }
-
-    item ShedsAndCommoners
-    {
-        DisplayCategory   = Furniture,
-        ItemType          = base:moveable,
-        Icon              = VendingMachine,
-        Weight            = 250,
-        DisplayName       = Books Vending Machine,
-        WorldObjectSprite = phunmart_03_24,
     }
 
     item PrawnStars

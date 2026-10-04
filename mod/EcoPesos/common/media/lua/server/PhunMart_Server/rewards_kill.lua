@@ -80,7 +80,10 @@ local function checkMilestones(player, pd, milestones, count, prefix)
             if not pd.claimed[key] then
                 pd.claimed[key] = true
                 for _, reward in ipairs(entry.rewards or {}) do
-                    Core:grantConfigReward(player, reward, "kill milestone: " .. entry.kills .. " " .. prefix .. "s")
+                    Core:grantConfigReward(player, reward, "kill milestone: " .. entry.kills .. " " .. prefix .. "s", {
+                        kind = prefix,
+                        kills = entry.kills
+                    })
                 end
                 Core.debugLn("[KillRewards] " .. username .. " claimed milestone " .. key)
             end
@@ -96,7 +99,11 @@ local function checkMilestones(player, pd, milestones, count, prefix)
                 pd.claimed[key] = multiple
                 for _ = 1, gained do
                     for _, reward in ipairs(entry.rewards or {}) do
-                        Core:grantConfigReward(player, reward, "every " .. entry.everyKills .. " " .. prefix .. "s")
+                        Core:grantConfigReward(player, reward, "every " .. entry.everyKills .. " " .. prefix .. "s", {
+                            kind = prefix,
+                            kills = multiple * entry.everyKills,
+                            every = true
+                        })
                     end
                 end
                 Core.debugLn("[KillRewards] " .. username .. " claimed " .. gained .. "x recurring " .. key)
@@ -112,7 +119,8 @@ function R:reportKills(player, normal, sprinter)
     if not self.loaded then
         return
     end
-    if Core.getOption("EnableTokenPool") == false then
+    local eco = SandboxVars and SandboxVars.EcoPesos
+    if not (eco and eco.RecompensasKills) then
         return
     end
     local username = player:getUsername()

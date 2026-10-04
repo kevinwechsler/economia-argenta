@@ -165,6 +165,31 @@ if oro then
         action and tostring(action.amount))
 end
 
+print("-- retos individuales --")
+SandboxVars.EcoPesos.RecompensasKills = true
+package.loaded["PhunMart/defaults/token_rewards"] = nil
+local retos = require "PhunMart/defaults/token_rewards"
+ok("hay retos de zombies", retos.zombieKills and #retos.zombieKills > 0)
+ok("hay retos de corredores", retos.sprinterKills and #retos.sprinterKills > 0)
+local todosPesos = true
+for _, lista in ipairs({retos.zombieKills or {}, retos.sprinterKills or {}}) do
+    for _, r in ipairs(lista) do
+        local premio = r.rewards and r.rewards[1]
+        if not (premio and premio.item == "Base.Money" and (premio.amount or 0) > 0 and (r.kills or r.everyKills)) then
+            todosPesos = false
+        end
+    end
+end
+ok("todos los retos pagan billetes", todosPesos)
+SandboxVars.EcoPesos.RecompensasKills = false
+package.loaded["PhunMart/defaults/token_rewards"] = nil
+local apagados = require "PhunMart/defaults/token_rewards"
+local cantidad = 0
+for _ in pairs(apagados) do
+    cantidad = cantidad + 1
+end
+ok("apagados no hay retos", cantidad == 0)
+
 print("")
 print(string.format("%d passed, %d failed", passed, failed))
 os.exit(failed == 0 and 0 or 1)

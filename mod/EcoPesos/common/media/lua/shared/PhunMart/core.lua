@@ -952,9 +952,9 @@ end
 --- a Lua parser, which is the thing the runtime no longer has.
 Core.overridePaths = {
     prices = {"PhunMart_Prices.json"},
-    specials = {"PhunMart_Specials.json", "PhunMart_XP_Rewards.json"},
-    conditionsDefs = {"PhunMart_Conditions.json", "PhunMart_XP_Conditions.json"},
-    items = {"PhunMart_Items.json", "PhunMart_XP_Items.json"},
+    specials = {"PhunMart_Specials.json"},
+    conditionsDefs = {"PhunMart_Conditions.json"},
+    items = {"PhunMart_Items.json"},
     groups = {"PhunMart_Groups.json"},
     pools = {"PhunMart_Pools.json"},
     shops = {"PhunMart_Shops.json"}
@@ -1093,7 +1093,7 @@ Core.defsRevision = 1
 --- reroll takes stock out from under players standing at shops the change never
 --- touched. Revision 1 is the vehicle rework: groups carry their own price band
 --- and fuel now, and only WrentAWreck sells cars.
-Core.defsRevisionShops = {"WrentAWreck"}
+Core.defsRevisionShops = {}
 
 --- What to call a shop type on screen.
 ---

@@ -74,6 +74,6 @@
   "Sandbox_EcoPesos_FactorPrecios_tooltip": "Escala todos los precios de las tiendas. 100 = precios normales, 200 = todo cuesta el doble, 50 = la mitad.",
   "Sandbox_EcoPesos_FactorCompraOro": "Factor de pago del Compro Oro",
   "Sandbox_EcoPesos_FactorCompraOro_tooltip": "Escala lo que paga el Compro Oro por joyas, piedras y lingotes. 100 = pago normal.",
-  "Sandbox_EcoPesos_RecompensasKills": "Recompensas en pesos por matar zombies",
-  "Sandbox_EcoPesos_RecompensasKills_tooltip": "Paga billetes al alcanzar hitos de kills (50, 200, 500, 1000 y cada 500). Requiere activar EnableTokenPool en la página 'Eco Pesos - Motor (avanzado)'."
+  "Sandbox_EcoPesos_RecompensasKills": "Retos individuales (pesos por kills)",
+  "Sandbox_EcoPesos_RecompensasKills_tooltip": "Paga pesos al jugador cuando cumple retos de kills: 25, 100, 250, 500, 1000 y 2500 zombies, y despu\u00e9s cada 1000. Tambi\u00e9n por matar corredores: 10, 50 y 150."
 }

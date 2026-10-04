@@ -601,5 +601,9 @@
   "IGUI_PhunMart_Shop_FinalAmendment": "Armeria (Gun shop)",
   "IGUI_PhunMart_Shop_FinalAmendment_tooltip": "Melee weapons, firearms and ammo. No questions asked.",
   "IGUI_PhunMart_Shop_PrawnStars": "Compro Oro (Gold buyer)",
-  "IGUI_PhunMart_Shop_PrawnStars_tooltip": "Hand over jewelry, gems and bars and walk away with cash."
+  "IGUI_PhunMart_Shop_PrawnStars_tooltip": "Hand over jewelry, gems and bars and walk away with cash.",
+  "IGUI_EcoPesos_Reto_Cumplido": "Challenge complete! %1 %2: %3",
+  "IGUI_EcoPesos_Reto_Zombies": "zombies",
+  "IGUI_EcoPesos_Reto_Corredores": "sprinters",
+  "IGUI_EcoPesos_Reto_Pesos": "+$%1"
 }
