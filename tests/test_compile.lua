@@ -175,7 +175,7 @@ local function precioDe(pool, item)
     end
 end
 local k, a = precioDe("pool_eco_armeria", "Katana")
-ok("la katana cuesta 48 billetes", a == 48, tostring(a))
+ok("la katana cuesta 80 billetes", a == 80, tostring(a))
 k, a = precioDe("pool_eco_armeria", "Bullets9mmBox")
 ok("una caja de 9mm cuesta 3 billetes", a == 3, tostring(a))
 k, a = precioDe("pool_eco_ferreteria", "NailsBox")

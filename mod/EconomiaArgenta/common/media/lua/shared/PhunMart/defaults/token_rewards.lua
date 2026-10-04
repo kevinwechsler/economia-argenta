@@ -27,24 +27,24 @@ end
 return {
     zombieKills = {{
         kills = 50,
-        rewards = billetes(1)
-    }, {
-        kills = 100,
-        rewards = billetes(2)
-    }, {
-        kills = 250,
         rewards = billetes(3)
     }, {
+        kills = 100,
+        rewards = billetes(8)
+    }, {
+        kills = 250,
+        rewards = billetes(20)
+    }, {
         kills = 500,
-        rewards = billetes(6)
+        rewards = billetes(35)
     }, {
         kills = 1000,
-        rewards = billetes(12)
+        rewards = billetes(60)
     }, {
         kills = 2500,
-        rewards = billetes(24)
+        rewards = billetes(120)
     }, {
         everyKills = 1000,
-        rewards = billetes(6)
+        rewards = billetes(30)
     }}
 }

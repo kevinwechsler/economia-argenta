@@ -29,25 +29,25 @@ EconomiaArgentaRetos = Retos
 -- Dias seguidos sin morir con el mismo personaje.
 Retos.dias = {{
     dias = 3,
-    pago = 1
+    pago = 5
 }, {
     dias = 7,
-    pago = 3
+    pago = 15
 }, {
     dias = 14,
-    pago = 7
+    pago = 35
 }, {
     dias = 30,
-    pago = 16
+    pago = 80
 }, {
     dias = 60,
-    pago = 32
+    pago = 160
 }}
 
 -- No morir nunca durante los primeros N dias del server.
 Retos.inicioLimpio = {
     dias = 5,
-    pago = 6,
+    pago = 20,
     -- Tiene que haber jugado al menos esto con su personaje, para que no lo
     -- cobre alguien que entra el dia 4.
     horasMinimas = 72
@@ -58,22 +58,22 @@ Retos.habilidades = {{
     clave = "hab5_1",
     nivel = 5,
     cantidad = 1,
-    pago = 2
+    pago = 5
 }, {
     clave = "hab5_3",
     nivel = 5,
     cantidad = 3,
-    pago = 5
+    pago = 12
 }, {
     clave = "hab8_1",
     nivel = 8,
     cantidad = 1,
-    pago = 8
+    pago = 25
 }, {
     clave = "hab10_1",
     nivel = 10,
     cantidad = 1,
-    pago = 16
+    pago = 50
 }}
 
 -- Primero del server: premio unico para todo el server.
@@ -81,22 +81,22 @@ Retos.primeros = {{
     clave = "primero_kills_1000",
     tipo = "kills",
     valor = 1000,
-    pago = 20
+    pago = 80
 }, {
     clave = "primero_kills_2500",
     tipo = "kills",
     valor = 2500,
-    pago = 40
+    pago = 150
 }, {
     clave = "primero_dias_30",
     tipo = "dias",
     valor = 30,
-    pago = 24
+    pago = 100
 }, {
     clave = "primero_hab_10",
     tipo = "habilidad",
     valor = 10,
-    pago = 20
+    pago = 80
 }}
 
 -- =========================================================

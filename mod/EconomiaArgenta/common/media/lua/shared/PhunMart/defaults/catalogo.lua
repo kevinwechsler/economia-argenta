@@ -101,10 +101,10 @@ M.armeria = {{
     key = "eco_blancas",
     label = "Armas blancas",
     items = {
-        BaseballBat = 3,
-        HuntingKnife = 3,
-        Machete = 12,
-        Katana = 48
+        BaseballBat = 10,
+        HuntingKnife = 6,
+        Machete = 25,
+        Katana = 80
     }
 }}
 
