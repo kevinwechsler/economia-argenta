@@ -80,7 +80,6 @@ local originalMoveable = {}
 -- this only keeps the menu honest. Re-run whenever defs change, since a shop
 -- can be switched either way while the game is running.
 local function ConfigTiles()
-    local admin = Core.utils.isAdmin(getSpecificPlayer(0))
     for tileName, shopKey in pairs(Core.spriteToShop) do
         local tile = IsoSpriteManager.instance:getSprite(tileName)
         local props = tile and tile:getProperties()
@@ -88,11 +87,15 @@ local function ConfigTiles()
             if originalMoveable[tileName] == nil then
                 originalMoveable[tileName] = props:has("IsMoveAble") and (props:get("IsMoveAble") or "") or false
             end
+            -- Economia Argenta: NO se saca IsMoveAble. Sin esa marca el juego
+            -- no deja COLOCAR la maquina desde el inventario, y en multiplayer
+            -- esto corre antes de saber si el jugador es admin, asi que el
+            -- admin tampoco podia colocarlas. Que un jugador comun no las
+            -- levante ni las rompa ya lo controla nodestroy.lua
+            -- (canPickUpMoveableInternal / isValid), que corre al validar.
             local original = originalMoveable[tileName]
-            if original and (admin or Core.isShopMoveable(shopKey)) then
+            if original then
                 props:set("IsMoveAble", original)
-            elseif original then
-                props:unset("IsMoveAble")
             end
         end
     end
