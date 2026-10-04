@@ -7,7 +7,25 @@
 #       workshop.txt                      (lo crea el juego al subir; se conserva)
 #       Contents\mods\EconomiaArgenta\... (el mod)
 # Despues: juego > Workshop > Crear y actualizar elementos > EconomiaArgenta.
+#
+# DESPUES DE SUBIR, limpiar:
+#   powershell -ExecutionPolicy Bypass -File workshop.ps1 -Limpiar
+# El juego toma esta carpeta como un mod instalado mas (sin WorkshopID) y la
+# usa en lugar de la descarga de Steam. -Limpiar saca el mod y deja solo
+# workshop.txt y preview.png, que hacen falta para la proxima actualizacion.
+param([switch]$Limpiar)
 $ErrorActionPreference = "Stop"
+
+if ($Limpiar) {
+    $contents = Join-Path $env:USERPROFILE "Zomboid\Workshop\EconomiaArgenta\Contents"
+    if (Test-Path $contents) {
+        Remove-Item -Recurse -Force $contents
+        Write-Host "Listo: se saco el mod de la carpeta del Workshop. El juego va a usar la descarga de Steam." -ForegroundColor Green
+    } else {
+        Write-Host "No habia nada que limpiar."
+    }
+    exit 0
+}
 $src = Join-Path $PSScriptRoot "mod\EconomiaArgenta"
 $preview = Join-Path $PSScriptRoot "arte\preview.png"
 $ws = Join-Path $env:USERPROFILE "Zomboid\Workshop\EconomiaArgenta"
@@ -56,4 +74,5 @@ if (Test-Path $wt) {
 }
 Write-Host "  $ws"
 Write-Host "Ahora: juego > Workshop > Crear y actualizar elementos > EconomiaArgenta."
+Write-Host "Cuando termine la subida: powershell -ExecutionPolicy Bypass -File workshop.ps1 -Limpiar" -ForegroundColor Yellow
 Write-Host "Descripcion para pegar en Steam: workshop_descripcion.txt"
