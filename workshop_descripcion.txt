@@ -1,0 +1,38 @@
+[h1]Economía Argenta[/h1]
+Una economía realista en pesos para servers con amigos. La plata no se gana matando zombies: se encuentra en el mundo y vale mucho.
+
+[h2]Cómo funciona[/h2]
+[list]
+[*][b]Billetes que valen:[/b] aparecen poco (cajas registradoras, bancos, carteras, algunos zombies). Con 5 billetes comprás una caja de balas; con unos 15, una pistola.
+[*][b]Armería:[/b] armas de fuego, munición, cargadores, accesorios y algunas armas blancas.
+[*][b]Ferretería:[/b] consumibles chicos para construir y reparar: clavos, tornillos, cinta, cables, pilas, soldadura y más. Las herramientas se siguen buscando.
+[*][b]Compro Oro:[/b] entregá joyas, piedras, monedas y lingotes y llevate billetes.
+[*][b]No se pueden vender otros objetos[/b] por plata.
+[*][b]Si morís, la plata queda en tu cuerpo.[/b]
+[*][b]Buscador[/b] en cada tienda.
+[/list]
+
+[h2]Retos[/h2]
+Pestaña [b]Retos[/b] en la ventana del personaje (tecla [b]0[/b], configurable). Muestra tu progreso y cuánto te falta.
+[list]
+[*][b]Kills:[/b] 50, 100, 250, 500, 1000, 2500 y después cada 1000.
+[*][b]Supervivencia:[/b] 3, 7, 14, 30 y 60 días sin morir, y no morir en los primeros 5 días del server.
+[*][b]Habilidades:[/b] niveles 5, 8 y 10.
+[*][b]Primero del server:[/b] premios únicos para el primero en llegar, con aviso a todos.
+[/list]
+Los retos se cobran con el botón [b]Reclamar[/b].
+
+[h2]Para admins[/h2]
+[list]
+[*]Las tiendas no aparecen solas: el admin las coloca donde quiera (Items List del modo debug → buscar "Armería", "Ferretería" o "Compro Oro" → colocarla como mueble).
+[*][b]Cambiar precios en el juego:[/b] click derecho sobre un producto en la tienda → "Cambiar precio…" / "Cambiar pago…" / "Volver al precio original". Se guarda en el server y las máquinas se actualizan solas.
+[*][b]Opciones de la partida[/b] (página "Economía Argenta"): cantidad de billetes en el mundo, factor de precios, factor del Compro Oro, retos, y un [b]modo prueba[/b] de retos para probar todo en minutos.
+[/list]
+
+[h2]Requisitos[/h2]
+Build 42. Funciona solo, sin otros mods. Pensado para multiplayer; también anda en solitario.
+
+[h2]Créditos y licencia[/h2]
+El motor de tiendas (ventana de compra, compra segura en multiplayer, colocación de tiendas y panel de admin) es de [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3689006725]PhunMart 2[/url], de UburGeek / PhunZoider, incluido y adaptado bajo su licencia GPL-3.0 ([url=https://github.com/PhunZoider/PhunMart]código original[/url]). ¡Gracias!
+
+Economía Argenta también es código abierto (GPL-3.0).
