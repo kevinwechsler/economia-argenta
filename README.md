@@ -33,7 +33,9 @@ GPL-3.0 (ver [LICENSE](LICENSE)).
 | Cuántos billetes hay en el mundo | `media/lua/server/EconomiaArgenta/billetes.lua` + sandbox |
 | Opciones de la partida | `media/sandbox-options.txt` (página "Economía Argenta") |
 | Textos | `media/lua/shared/Translate/{AR,ES,EN}/` (el juego en "Español (Argentina)" usa AR) |
-| Ícono del billete | El del juego. Hubo una prueba con un billete de pesos (`arte/`), descartada porque a 32px no se entendía |
+| Ícono del billete | El del juego (sin cambios) |
+| Póster, ícono del mod y vista previa del Workshop | Originales en `arte/poster_original.jpg` y `arte/icono_original.jpg`; `arte/hacer_imagenes.ps1` genera `poster.png` (512), `icon.png` (64) y `arte/preview.png` (256) |
+| Publicar en el Workshop | `workshop.ps1` arma `Zomboid/Workshop/EconomiaArgenta`; descripción para Steam en `workshop_descripcion.txt` |
 
 Todo bajo `mod/EconomiaArgenta/common/`. El motor vive en
 `media/lua/{client,server,shared}/PhunMart*` (nombre interno, no se cambia
