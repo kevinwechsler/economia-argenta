@@ -35,4 +35,4 @@ Build 42. Funciona solo, sin otros mods. Pensado para multiplayer; también anda
 [h2]Créditos y licencia[/h2]
 El motor de tiendas (ventana de compra, compra segura en multiplayer, colocación de tiendas y panel de admin) es de [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3689006725]PhunMart 2[/url], de UburGeek / PhunZoider, incluido y adaptado bajo su licencia GPL-3.0 ([url=https://github.com/PhunZoider/PhunMart]código original[/url]). ¡Gracias!
 
-Economía Argenta también es código abierto (GPL-3.0).
+Economía Argenta también es código abierto (GPL-3.0): [url=https://github.com/kevinwechsler/economia-argenta]código en GitHub[/url].

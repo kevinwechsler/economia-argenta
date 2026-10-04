@@ -101,4 +101,4 @@ juego no arranca si no. `deploy.ps1` lo controla.
   https://github.com/PhunZoider/PhunMart (GPL-3.0). Modificado: catálogos,
   moneda, opciones, textos y retos propios; sin billetera, XP, traits,
   vehículos ni animales.
-- Economía Argenta por Kevin.
+- Economía Argenta por Kevin. Código: https://github.com/kevinwechsler/economia-argenta — Steam Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3813560885
