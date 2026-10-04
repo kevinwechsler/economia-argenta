@@ -69,6 +69,22 @@ Necesita LuaJIT (`winget install --id DEVCOM.LuaJIT --source winget`).
 & "$env:LOCALAPPDATA\Programs\LuaJIT\bin\luajit.exe" tests\test_compile.lua
 ```
 
+```bash
+& "$env:LOCALAPPDATA\Programs\LuaJIT\bin\luajit.exe" tests\test_retos_tab.lua
+```
+
+## Probar los retos rápido
+
+En las opciones de la partida, página "Economía Argenta", prender **Modo
+prueba de retos**:
+- divide por 50 los objetivos de kills y días (50 kills = 1, 3 días = 1,4
+  horas de juego),
+- baja las habilidades pedidas a nivel 1,
+- revisa los retos cada minuto.
+
+La pestaña Retos (tecla 0) muestra un aviso rojo mientras está prendido.
+Apagarlo antes de jugar en serio.
+
 Importante: todos los archivos de texto tienen que ser UTF-8 **sin BOM**; el
 juego no arranca si no. `deploy.ps1` lo controla.
 
