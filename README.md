@@ -55,7 +55,8 @@ powershell -ExecutionPolicy Bypass -File deploy.ps1
 4. Nueva partida → Sandbox:
    - Página **PhunMart**: `EnableChangePool = false`, `ChanceToConvert = 0`
      (sin eso, los zombies sueltan monedas de PhunMart y las expendedoras se
-     convierten en sus tiendas).
+     convierten en sus tiendas). `MaxStickyItems = 50` para que no avise en
+     el log por los catálogos grandes (es solo un aviso, no rompe nada).
    - Página **Eco Pesos**: factores a gusto.
 5. Entrar con `-debug` (propiedades del juego en Steam → opciones de
    lanzamiento) para tener el menú de admin en single player.

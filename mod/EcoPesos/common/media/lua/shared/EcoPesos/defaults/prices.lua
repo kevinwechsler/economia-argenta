@@ -48,6 +48,7 @@ return {
     eco_20 = pesos(20),
     eco_30 = pesos(30),
     eco_40 = pesos(40),
+    eco_50 = pesos(50),
     eco_60 = pesos(60),
     eco_80 = pesos(80),
     eco_100 = pesos(100),
